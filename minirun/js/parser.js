@@ -3,18 +3,20 @@ const TokenType = require('./tokenizer').TokenType;
 
 const ASTNodeType = {
 	ROOT:		1,
-	LEAF:		2,
-	ATTACH:		3,	// things like function call, array indexing etc.
+	LEAF:		2,	// primitives
+	DELIMIT:	3,	// comma, semicolon.
 	OP_ENCLOSE:	10,
 	OP_PREFIX:	11,
 	OP_SUFFIX:	12,
 	OP_BINARY:	13,
+
+	// id >= 100 are for custom AST parser & transformer use
 };
 
 
 function parsePrimitive(context) {
 	if (context.pos >= context.end) {
-		context.err = 'eof'
+		context.err = 'eof';
 		return undefined;
 	}
 
@@ -33,45 +35,142 @@ function parsePrimitive(context) {
 }
 
 /*
+ * Parse the expressions enclosed by parentheses, brackets, braces etc.
+ */
+function parseEnclose(context, level) {
+	if (context.pos >= context.end) {
+		context.err = 'eof';
+		return undefined;
+	}
+
+	const operators = context.operators[level];
+
+	if (!operators.enclose) {
+		return undefined;
+	}
+
+	const token = context.tokens[context.pos];
+
+	for (const pair of operators.enclose) {
+		if (token.type === pair[0]) {
+			context.pos++;
+
+			const nodes = [], delimiters = [];
+
+			let result =  {
+				type:		ASTNodeType.OP_ENCLOSE,
+				token:		token,
+				nodes:		nodes,
+				delimiters:	delimiters,
+			};
+
+			let index = 0;
+			while (true) {
+				if (context.pos >= context.end) {
+					context.err = 'eof';
+					return undefined;
+				}
+
+				const token0 = context.tokens[context.pos];
+				if (token0.type === pair[1]) {
+					context.pos++;
+					break;
+				}
+
+				const node = parseExpr(context);
+				if (node) {
+					node.parent = result;
+					node.index = index;
+					nodes.push(node);
+					index++;
+				} else {
+					nodes.push(undefined);	// empty node
+				}
+
+				const token1 = context.tokens[context.pos];
+				if (token1.type === pair[1]) {
+					context.pos++;
+					break;
+				} else if (token1.type === TokenType.COMMA || token1.type === TokenType.SEMICOLON) {
+					context.pos++;
+					delimiters.push(token1);
+				} else {
+					const emptyDelimiterToken = {
+						type:	TokenType.EMPTY,
+						pos:	token1.pos,
+						line:	token1.line,
+						col:	token1.col,
+					};
+					delimiters.push(emptyDelimiterToken);
+				}
+			}
+
+			return result;
+		}
+	}
+
+	return undefined;
+}
+
+function binaryOpAppendReOrder(node1, node2, token, operators) {
+	// re-order: we want to calculate from left to right
+	// We use grammar without left-recursion, so the AST tree is from right to left.
+	const node = {
+		type:	ASTNodeType.OP_BINARY,
+		token:	undefined,
+		node1:	node2,
+		node2:	undefined,
+	}
+	node2.parent = node;
+	let curNode = node;
+	while (curNode.node1.type === ASTNodeType.OP_BINARY && operators.findIndex(op => curNode.node1.token.type === op) >= 0) {
+		const subNode = curNode.node1;
+		curNode.token = subNode.token;
+		curNode.node2 = subNode.node2;
+		curNode = subNode;
+	}
+
+	curNode.token = token;
+	curNode.node2 = curNode.node1
+	curNode.node1 = node1;
+	node1.parent = curNode;
+
+	return node;
+}
+
+/*
  * Operators have different levels.
  * Smaller level number means higher precedence.
  */
 
 function _parseLevel(context, level) {
 	if (context.pos >= context.end) {
-		context.err = 'eof'
+		context.err = 'eof';
 		return undefined;
 	}
 
 	const token = context.tokens[context.pos];
 
+	if (token.type === TokenType.SEMICOLON || token.type === TokenType.COMMA) {
+		context.pos++;
+		return {
+			type:	ASTNodeType.DELIMIT,
+			token:	token,
+		};
+	}
+
 	const levels = context.operators.length;
 	const operators = context.operators[level];
 
+	if (level < 0) {
+		return parsePrimitive(context);
+	}
 
 	// 1: enclose operators
 	if (operators.enclose) {
-		for (const pair of operators.enclose) {
-			if (token.type === pair[0]) {
-				context.pos++;
-				const node = parseLevel(context, levels - 1);
-				if (node) {
-					if (context.pos >= context.end || context.tokens[context.pos].type != pair[1]) {
-						context.err = `expected right token ${pair[1]}`;
-						return undefined;
-					}
-					context.pos++;
-					return {
-						type:	ASTNodeType.OP_ENCLOSE,
-						token:	token,
-						node:	node,
-					}
-				} else {
-					return undefined;
-				}
-			} else {
-				break;
-			}
+		const node = parseEnclose(context, level);
+		if (node) {
+			return node;
 		}
 	}
 
@@ -82,11 +181,13 @@ function _parseLevel(context, level) {
 				context.pos++
 				const node = parseLevel(context, level);
 				if (node) {
-					return {
+					const result = {
 						type:	ASTNodeType.OP_PREFIX,
 						token:	token,
 						node:	node,
-					}
+					};
+					node.parent = result;
+					return result;
 				} else {
 					break;
 				}
@@ -96,7 +197,7 @@ function _parseLevel(context, level) {
 
 	// 3: binary operators
 	if (operators.binary) {
-		const node1 = level > 0 ? parseLevel(context, level - 1) : parsePrimitive(context);
+		const node1 = parseLevel(context, level - 1);
 		if (!node1) {
 			return undefined;
 		}
@@ -115,27 +216,7 @@ function _parseLevel(context, level) {
 					return undefined;
 				}
 			
-				// re-order: we want to calculate from left to right
-				// (We use grammar without left-recursion, so the AST tree is from right to left)
-				const node = {
-					type:	ASTNodeType.OP_BINARY,
-					token:	undefined,
-					node1:	node2,
-					node2:	undefined,
-				}
-				let curNode = node;
-				while (curNode.node1.type === ASTNodeType.OP_BINARY && operators.binary.findIndex(op => curNode.node1.token.type === op) >= 0) {
-					const subNode = curNode.node1;
-					curNode.token = subNode.token;
-					curNode.node2 = subNode.node2;
-					curNode = subNode;
-				}
-			
-				curNode.token = token;
-				curNode.node2 = curNode.node1
-				curNode.node1 = node1;
-			
-				return node;
+				return binaryOpAppendReOrder(node1, node2, token, operators.binary);
 			}
 		}
 
@@ -143,56 +224,41 @@ function _parseLevel(context, level) {
 	}
 
 	// next level
-	if (level > 0) {
-		return parseLevel(context, level - 1);
-	} else {
-		// level 0
-		// primitive
-		return parsePrimitive(context);
-	}
+	return parseLevel(context, level - 1);
 }
 
 /*
  * do level-0 attaching
  */
 function parseLevel(context, level) {
-	const node = _parseLevel(context, level);
-	if (level === 0) {
+	let node = _parseLevel(context, level);
+
+	if (level <= 0) {
 		// try attaching
 
-		if (context.pos >= context.end) {
-			return node;
-		}
+		while (true) {
+			if (context.pos >= context.end) {
+				return node;
+			}
 
-		const token = context.tokens[context.pos];
 
-		const levels = context.operators.length;
-		const operators = context.operators[0];
+			const token = context.tokens[context.pos];
 
-		if (operators.enclose) {
-			for (const pair of operators.enclose) {
-				if (token.type === pair[0]) {
-					context.pos++;
-					const node2 = parseLevel(context, levels - 1);
-					if (node2) {
-						if (context.pos >= context.end || context.tokens[context.pos].type != pair[1]) {
-							context.err = `expected right token ${pair[1]}`;
-							return undefined;
-						}
-						context.pos++;
+			const operators = context.operators[0];
 
-						return {
-							type:	ASTNodeType.ATTACH,
-							token:	token,
-							node1:	node,
-							node2:	node2,
-						};
-					} else {
-						return undefined;
-					}
+			if (operators.enclose) {
+				const node2 = parseEnclose(context, 0);
+				if (node2) {
+					const attachToken = structuredClone(node2.token);
+					attachToken.data = token.type;
+					attachToken.type = TokenType.ATTACH;
+
+					node = binaryOpAppendReOrder(node, node2, attachToken, operators.binary);
 				} else {
 					break;
 				}
+			} else {
+				break;
 			}
 		}
 
@@ -212,10 +278,19 @@ function parseRoot(context) {
 	const end = context.end;
 	const nodes = []
 
+	const result = {
+		type:	ASTNodeType.ROOT,
+		nodes:	nodes,
+	};
+
+	let index = 0;
 	while (true) {
 		const node = parseExpr(context);
 		if (node) {
+			node.parent = result;
+			node.index = index;
 			nodes.push(node);
+			index++;
 		} else if (context.pos >= context.end) {
 			context.err = undefined;
 			break;
@@ -224,10 +299,7 @@ function parseRoot(context) {
 		}
 	}
 
-	return {
-		type:	ASTNodeType.ROOT,
-		nodes:	nodes,
-	};
+	return result;
 }
 
 function parse(tokens, operators) {

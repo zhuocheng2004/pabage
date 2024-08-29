@@ -4,6 +4,8 @@ const TokenType = {
 	IDENTIFIER:	2,
 	NUMBER:		3,
 	STRING:		4,
+
+	// single-char
 	LPAREN:		10,	// ()
 	RPAREN:		11,
 	LBRACKET:	12,	// []
@@ -28,6 +30,30 @@ const TokenType = {
 	HAT:		33,	// ^
 	HASH:		34,	// #
 	DOLLAR:		35,	// $
+	EXCLAM:		36,	// !
+	TILDE:		37,	// ~
+	BACKSLASH:	38,	// \
+	BACKQUOTE:	39,	// `
+	UNDERSCORE:	40,	// _
+	QUESTION:	41,	// ?
+	QUOTE:		42,	// '
+	DQUOTE:		43,	// "
+
+	// multi-char
+	RARROW:		100,	// ->
+	RDARROW:	101,	// =>
+	EQUAL:		102,	// ==
+	NEQUAL:		103,	// !=
+	GEQUAL:		104,	// >=
+	LEGUAL:		105,	// <=
+	PLUSEQUAL:	110,	// +=
+	MINUSEQUAL:	111,	// -=
+	MULEQUAL:	112,	// *=
+	DIVEQUAL:	113,	// /=
+
+	// virtual tokens generated during parse
+	EMPTY:		200,
+	ATTACH:		201,
 };
 
 function isLatinOrUnderscore(ch) {
@@ -159,7 +185,7 @@ function tryGetString(context) {
 
 	while (true) {
 		if (pos >= end) {
-			context.err = 'unexpected end';
+			context.err = 'non-closed string: unexpected eof';
 			break;
 		}
 
@@ -180,11 +206,19 @@ function tryGetString(context) {
 			console.log('A')
 			pos++;
 			if (pos >= end) {
-				context.err = 'unexpected end';
+				context.err = 'unexpected eof';
 				break;
 			} else {
 				const ch1 = text[pos];
 				switch (ch1) {
+					case '\'':
+						pos++;
+						str += '\'';
+						break;
+					case '\"':
+						pos++;
+						str += '\"';
+						break;
 					case 'b':
 						pos++;
 						str += '\b';
@@ -206,7 +240,7 @@ function tryGetString(context) {
 						str += '\\';
 						break;
 					default:
-						context.err = 'unexpected escape';
+						context.err = 'unexpected escape in string';
 						break;
 				}
 			}
@@ -231,20 +265,22 @@ function skipComment(context) {
 
 	if (ch0 === '/' && ch1 === '*') {
 		pos += 2;
+		col += 2;
 		while (true) {
 			if (pos >= end) {
-				context.err = 'unexpected end'
+				context.err = 'non-closed comment: unexpected eof'
 				break;
 			}
 
 			if (text[pos] === '\n') {
+				context.lineStarts.push(pos+1);
 				line++;
 				col = 0;
 			}
 
 			if (pos <= end - 2 && text[pos] === '*' && text[pos+1] === '/') {
-				context.pos = pos + 2;
 				context.line = line;
+				context.pos = pos + 2;
 				context.col = col + 2;
 				return true;
 			}
@@ -263,6 +299,7 @@ function skipComment(context) {
 
 			if (text[pos] === '\n') {
 				context.pos = pos + 1;
+				context.lineStarts.push(pos + 1);
 				context.line++;
 				context.col = 0;
 				return true;
@@ -283,8 +320,11 @@ function tokenize(text) {
 		line:	0,
 		col:	0,
 		tokens:	[],
+		lineStarts:	[],
 		err:	undefined,
 	}
+
+	context.lineStarts.push(0);
 
 	while (true) {
 		const text = context.text, end = context.end;
@@ -303,10 +343,15 @@ function tokenize(text) {
 		switch (ch0) {
 			// skip empty tokens
 			case '\n':
-				context.line++;
-			case '\r':
-				context.col = 0;
 				context.pos++;
+				context.line++;
+				context.col = 0;
+				context.lineStarts.push(context.pos);
+				tokenType = TokenType.EMPTY;
+				break;
+			case '\r':
+				context.pos++;
+				context.col = 0;
 				tokenType = TokenType.EMPTY;
 				break;
 			case '\t':
@@ -371,6 +416,14 @@ function tokenize(text) {
 			case '%':
 				context.pos++; context.col++;
 				tokenType = TokenType.PERCENT;
+				break;
+			case ',':
+				context.pos++; context.col++;
+				tokenType = TokenType.COMMA;
+				break;
+			case '.':
+				context.pos++; context.col++;
+				tokenType = TokenType.DOT;
 				break;
 			case ';':
 				context.pos++; context.col++;
@@ -444,6 +497,7 @@ function tokenize(text) {
 		pos:	context.pos,
 		line:	context.line,
 		col:	context.col,
+		lineStarts:	context.lineStarts,
 		text:	context.text,
 	};
 }
