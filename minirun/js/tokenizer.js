@@ -23,6 +23,11 @@ const TokenType = {
 	COLON:		28,	// :
 	SEMICOLON:	29,	// ;
 	ASSISN:		30,	// =
+	AMP:		31,	// &
+	VERT:		32,	// |
+	HAT:		33,	// ^
+	HASH:		34,	// #
+	DOLLAR:		35,	// $
 };
 
 function isLatinOrUnderscore(ch) {
@@ -363,9 +368,33 @@ function tokenize(text) {
 					tokenType = TokenType.SLASH;
 				}
 				break;
+			case '%':
+				context.pos++; context.col++;
+				tokenType = TokenType.PERCENT;
+				break;
 			case ';':
 				context.pos++; context.col++;
 				tokenType = TokenType.SEMICOLON;
+				break;
+			case '&':
+				context.pos++; context.col++;
+				tokenType = TokenType.AMP;
+				break;
+			case '|':
+				context.pos++; context.col++;
+				tokenType = TokenType.VERT;
+				break;
+			case '^':
+				context.pos++; context.col++;
+				tokenType = TokenType.HAT;
+				break;
+			case '#':
+				context.pos++; context.col++;
+				tokenType = TokenType.HASH;
+				break;
+			case '$':
+				context.pos++; context.col++;
+				tokenType = TokenType.DOLLAR;
 				break;
 			case '=':
 				context.pos++; context.col++;
@@ -419,4 +448,7 @@ function tokenize(text) {
 	};
 }
 
-export { TokenType, tokenize };
+module.exports = {
+	TokenType:	TokenType,
+	tokenize:	tokenize,
+};

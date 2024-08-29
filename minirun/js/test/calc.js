@@ -1,12 +1,18 @@
 
-import { TokenType, tokenize } from "./tokenizer.mjs";
-import { parse } from "./parser.mjs";
-import { run } from "./runner.mjs";
+const tokenizer = require('../tokenizer');
+const TokenType = tokenizer.TokenType;
+const tokenize = tokenizer.tokenize;
+
+const parse = require('../parser').parse;
+const run = require('./calc-runner').run;
 
 const operators = [
 	{
 		enclose:	[ [ TokenType.LPAREN, TokenType.RPAREN ] ],
 		unary:		[ TokenType.PLUS, TokenType.MINUS ],
+	},
+	{
+		binary:		[ TokenType.HAT ],
 	},
 	{
 		binary:		[ TokenType.STAR, TokenType.SLASH ],
@@ -25,6 +31,8 @@ function evaluate(source) {
 	}
 
 	const tokens = tokenzieResult.tokens;
+
+	//console.log(tokens);
 	
 	const parseResult = parse(tokens, operators);
 
@@ -36,9 +44,16 @@ function evaluate(source) {
 	}
 
 	const ast = parseResult.ast;
-	
-	run(ast);
+
+	//console.log(JSON.stringify(ast, undefined, 4));
+
+	return run(ast);
 }
 
-if (process.argv.length >= 3)
-	evaluate(process.argv[2])
+if (process.argv.length >= 3) {
+	console.log(evaluate(process.argv[2]))
+}
+
+module.exports = {
+	evaluate:	evaluate,
+};

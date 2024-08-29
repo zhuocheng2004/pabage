@@ -1,9 +1,10 @@
 
-import { tokenize, TokenType } from "./tokenizer.mjs";
+const TokenType = require('./tokenizer').TokenType;
 
 const ASTNodeType = {
 	ROOT:		1,
 	LEAF:		2,
+	ATTACH:		3,	// things like function call, array indexing etc.
 	OP_ENCLOSE:	10,
 	OP_PREFIX:	11,
 	OP_SUFFIX:	12,
@@ -33,10 +34,10 @@ function parsePrimitive(context) {
 
 /*
  * Operators have different levels.
- * Smaller level number means higher priority.
+ * Smaller level number means higher precedence.
  */
 
-function parseLevel(context, level) {
+function _parseLevel(context, level) {
 	if (context.pos >= context.end) {
 		context.err = 'eof'
 		return undefined;
@@ -46,6 +47,7 @@ function parseLevel(context, level) {
 
 	const levels = context.operators.length;
 	const operators = context.operators[level];
+
 
 	// 1: enclose operators
 	if (operators.enclose) {
@@ -150,6 +152,56 @@ function parseLevel(context, level) {
 	}
 }
 
+/*
+ * do level-0 attaching
+ */
+function parseLevel(context, level) {
+	const node = _parseLevel(context, level);
+	if (level === 0) {
+		// try attaching
+
+		if (context.pos >= context.end) {
+			return node;
+		}
+
+		const token = context.tokens[context.pos];
+
+		const levels = context.operators.length;
+		const operators = context.operators[0];
+
+		if (operators.enclose) {
+			for (const pair of operators.enclose) {
+				if (token.type === pair[0]) {
+					context.pos++;
+					const node2 = parseLevel(context, levels - 1);
+					if (node2) {
+						if (context.pos >= context.end || context.tokens[context.pos].type != pair[1]) {
+							context.err = `expected right token ${pair[1]}`;
+							return undefined;
+						}
+						context.pos++;
+
+						return {
+							type:	ASTNodeType.ATTACH,
+							token:	token,
+							node1:	node,
+							node2:	node2,
+						};
+					} else {
+						return undefined;
+					}
+				} else {
+					break;
+				}
+			}
+		}
+
+		return node;
+	} else {
+		return node;
+	}
+}
+
 function parseExpr(context) {
 	const levels = context.operators.length;
 
@@ -196,4 +248,7 @@ function parse(tokens, operators) {
 	};
 }
 
-export { ASTNodeType, parse };
+module.exports = {
+	ASTNodeType:	ASTNodeType,
+	parse:		parse,
+};
