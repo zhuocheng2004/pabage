@@ -203,7 +203,6 @@ function tryGetString(context) {
 			});
 			return true;
 		} else if (ch === '\\') {
-			console.log('A')
 			pos++;
 			if (pos >= end) {
 				context.err = 'unexpected eof';

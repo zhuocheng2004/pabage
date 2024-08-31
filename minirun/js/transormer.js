@@ -3,16 +3,17 @@ const TokenType = require('./tokenizer').TokenType;
 const ASTNodeType = require('./parser').ASTNodeType;
 
 const NodeType = {
-	ROOT:		100,
-	CHUNK:		101,	// a sequence of statements
-	FUNC_DEF:	102,	// fn ID (ID [,ID]*) { <expr>* }
-	VAR_DEF:	103,
-	IDENTIFIER:	110,
-	LIT_NUMBER:	111,
-	STAT_RETURN:	120,
-	EXPR_UNARY:	130,
-	EXPR_BINARY:	131,
-	FUNC_CALL:	135,
+	ROOT:		100,	// nodes
+	CHUNK:		101,	// nodes
+	FUNC_DEF:	102,	// name, args, body
+	VAR_DEF:	103,	// name, constant [,init]
+	IDENTIFIER:	110,	// name
+	LIT_NUMBER:	111,	// value
+	LIT_STRING:	112,	// value
+	STAT_RETURN:	120,	// [arg]
+	EXPR_UNARY:	130,	// operator, arg
+	EXPR_BINARY:	131,	// operator, arg1, arg2
+	FUNC_CALL:	135,	// func, args
 };
 
 const OperatorType = {
@@ -27,6 +28,7 @@ const OperatorType = {
 
 const msg_internal_error = 'compiler internal error';
 const msg_no_parent = 'non-root node has no parent';
+
 
 function spliceNodes(nodes, index, deleteCount, items) {
 	if (index + deleteCount > nodes.length) {
@@ -115,6 +117,7 @@ function traverseNodes(node, func) {
 			break;
 		case NodeType.IDENTIFIER:
 		case NodeType.LIT_NUMBER:
+		case NodeType.LIT_STRING:
 			break;
 		default:
 			err = {
@@ -484,6 +487,10 @@ function pass_primitive(node) {
 			node.type = NodeType.LIT_NUMBER;
 			node.value = token.data;
 			break;
+		case TokenType.STRING:
+			node.type = NodeType.LIT_STRING;
+			node.value = token.data;
+			break;
 		default:
 			return {
 				msg:	'unrecognized primitive',
@@ -576,6 +583,10 @@ function getReadableAST(ast, showToken = false) {
 		}
 	})
 	return result;
+}
+
+function printAST(ast) {
+	console.log(JSON.stringify(getReadableAST(ast), undefined, 4));
 }
 
 module.exports = {

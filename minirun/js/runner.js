@@ -99,20 +99,28 @@ function main(source, entry) {
 	} else {
 		const value = result.value;
 		let raw;
-		switch (value.type) {
-			case ObjectType.VAR:
-				raw = result.value.value;
-				break;
-			case ObjectType.FUNC:
-				raw = '[function]';
-				break;
-			case ObjectType.NATIVE_FUNC:
-				raw = '[native function]';
-				break;
-			default:
-				raw = '[unknown type]';
+		if (value) {
+			switch (value.type) {
+				case ObjectType.FUNC:
+					raw = '[function]';
+					break;
+				case ObjectType.NATIVE_FUNC:
+					raw = '[native function]';
+					break;
+				case ObjectType.UNDEF:
+					raw = undefined
+					break;
+				case ObjectType.NUMBER:
+					raw = value.value;
+					break;
+				default:
+					raw = undefined;
+			}
 		}
-		console.log(`Succeeded with result: ${raw}`);
+
+		if (raw !== undefined) {
+			console.log(`Program result: ${raw}`);
+		}
 	}
 }
 
