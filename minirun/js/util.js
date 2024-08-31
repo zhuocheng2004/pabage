@@ -5,17 +5,22 @@ function resultValue(value) {
 	};
 }
 
-function resultError(msg, token = undefined) {
+function makeError(msg, token = undefined) {
 	const err = {
 		msg:	msg,
 	};
 	if (token) err.token = token;
+	return err;
+}
+
+function resultError(msg, token = undefined) {
 	return {
-		err:	err,
+		err: makeError(msg, token)
 	};
 }
 
 module.exports = {
+	makeError:	makeError,
 	resultValue:	resultValue,
 	resultError:	resultError,
 };

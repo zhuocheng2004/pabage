@@ -1,19 +1,23 @@
 
+const util = require('./util');
+const makeError = util.makeError, resultError = util.resultError, resultValue = util.resultValue;
+
 const TokenType = require('./tokenizer').TokenType;
 const ASTNodeType = require('./parser').ASTNodeType;
 
 const NodeType = {
 	ROOT:		100,	// nodes
-	CHUNK:		101,	// nodes
-	FUNC_DEF:	102,	// name, args, body
-	VAR_DEF:	103,	// name, constant [,init]
-	IDENTIFIER:	110,	// name
-	LIT_NUMBER:	111,	// value
-	LIT_STRING:	112,	// value
-	STAT_RETURN:	120,	// [arg]
-	EXPR_UNARY:	130,	// operator, arg
-	EXPR_BINARY:	131,	// operator, arg1, arg2
-	FUNC_CALL:	135,	// func, args
+	NS:		101,	// path [body]
+	CHUNK:		110,	// nodes
+	FUNC_DEF:	111,	// name args body
+	VAR_DEF:	112,	// name constant [init]
+	IDENTIFIER:	120,	// name [path]
+	LIT_NUMBER:	121,	// value
+	LIT_STRING:	122,	// value
+	STAT_RETURN:	130,	// [arg]
+	EXPR_UNARY:	140,	// operator arg
+	EXPR_BINARY:	141,	// operator arg1 arg2
+	FUNC_CALL:	145,	// func args
 };
 
 const OperatorType = {
@@ -30,15 +34,19 @@ const msg_internal_error = 'compiler internal error';
 const msg_no_parent = 'non-root node has no parent';
 
 
-function spliceNodes(nodes, index, deleteCount, items) {
-	if (index + deleteCount > nodes.length) {
-		return;
-	}
+function spliceNodes(nodes, delimiters, index, deleteCount, addedItem) {
+	if (deleteCount <= 0 || index + deleteCount > nodes.length) return;
 
-	const deleted = nodes.splice(index, deleteCount, ...items)
+	const deleted = addedItem ? nodes.splice(index, deleteCount, addedItem) : nodes.splice(index, deleteCount);
 
-	for (let i = index + items.length; i < nodes.length; i++) {
+	// adjust children indices
+	for (let i = index + 1; i < nodes.length; i++) {
 		nodes[i].index = i;
+	}
+	
+	// remove delimiters
+	if (delimiters) {
+		delimiters.splice(index, deleteCount - 1);
 	}
 
 	return deleted;
@@ -78,6 +86,11 @@ function traverseNodes(node, func) {
 			for (const child of node.nodes) {
 				if (err = traverseNodes(child, func))
 					break;
+			}
+			break;
+		case NodeType.NS:
+			if (node.body) {
+				err = traverseNodes(node.body, func);
 			}
 			break;
 		case NodeType.CHUNK:
@@ -120,10 +133,7 @@ function traverseNodes(node, func) {
 		case NodeType.LIT_STRING:
 			break;
 		default:
-			err = {
-				msg:	`unrecognized node type ${node.type}`,
-				token:	node.token
-			}
+			err = makeError(`unrecognized node type ${node.type}`, node.token);
 	}
 
 	if (!err) {
@@ -131,6 +141,76 @@ function traverseNodes(node, func) {
 	}
 
 	return err;
+}
+
+function get_ns_path(node) {
+	const token = node.token;
+	if (node.type === ASTNodeType.LEAF) {
+		if (token.type === TokenType.IDENTIFIER) {
+			return resultValue([ token.data ]);
+		} else {
+			return resultError('expected an identifier', token);
+		}
+	}
+
+	if (node.type !== ASTNodeType.OP_BINARY || token.type !== TokenType.DOT) return resultError('expected dot \'.\'', token);
+
+	const node1 = node.node1, node2 = node.node2;
+	if (node2.type !== ASTNodeType.LEAF || node2.token.type !== TokenType.IDENTIFIER) return resultError('expected an identifier', node2.token);
+	const name = node2.token.data;
+
+	const result = get_ns_path(node1);
+	if (result.err) return result;
+	const path = result.value;
+	path.push(name);
+
+	return resultValue(path);
+}
+
+function pass_namespace(node) {
+	const token = node.token;
+	if (node.type !== ASTNodeType.LEAF || token.type !== TokenType.IDENTIFIER) return;
+	if (token.data !== 'ns') return;
+
+	const parent = node.parent;
+	if (!parent) return makeError(msg_no_parent, token);
+
+	if (parent.type !== ASTNodeType.ROOT && parent.type !== ASTNodeType.OP_ENCLOSE) 
+		return makeError('bad namespace declaration position', token);
+
+	const node1 = parent.nodes[node.index+1];
+	const delimited = parent.delimiters ? parent.delimiters[node.index]?.type !== TokenType.EMPTY : false;
+	if (!node1 || delimited || node1.type === ASTNodeType.DELIMIT)
+		return makeError('missing namespace path', token);
+
+	let path_node = node1, body = undefined;
+	if (node1.type === ASTNodeType.OP_BINARY && node1.token.type == TokenType.ATTACH) {
+		path_node = node1.node1;
+		const node12 = node1.node2;
+		if (node12.type !== ASTNodeType.OP_ENCLOSE || node12.token.type !== TokenType.LBRACE)
+			return makeError('bad namespace chunk');
+		body = node12;
+	}
+
+	const result = get_ns_path(path_node);
+	if (result.err) return result.err;
+	const path = result.value;
+
+	const ns_node = {
+		parent:	parent,
+		type:	NodeType.NS,
+		token:	token,
+		path:	path,
+		index:	node.index,
+	};
+	if (body) ns_node.body = body;
+
+	if (!spliceNodes(parent.nodes, parent.delimiters, node.index, 2, ns_node))
+		return makeError(msg_internal_error, node.token);
+
+	if (body) {
+		return traverseNodes(body, pass_namespace);
+	}
 }
 
 function pass_func_def(node) {
@@ -211,18 +291,8 @@ function pass_func_def(node) {
 
 	func_body_node.parent = func_def_node;
 
-	if (!spliceNodes(parent.nodes, node.index, 2, [ func_def_node ])) return {
-		msg:	msg_internal_error,
-		token:	node.token,
-	};
-
-	// remove delimiters
-	if (parent.delimiters) {
-		if (!parent.delimiters.splice(node.index, 1)) return {
-			msg:	msg_internal_error,
-			token:	node.token,
-		};
-	}
+	if (!spliceNodes(parent.nodes, parent.delimiters, node.index, 2, func_def_node ))
+		return makeError(msg_internal_error, node.token);
 
 	return traverseNodes(func_body_node, pass_func_def);
 }
@@ -296,18 +366,8 @@ function pass_var_def(node) {
 
 	if (init) var_def_node.init = init;
 
-	if (!spliceNodes(parent.nodes, node.index, init ? 2 : 1, [ var_def_node ])) return {
-		msg:	msg_internal_error,
-		token:	node.token,
-	};
-
-	// remove delimiters
-	if (parent.delimiters) {
-		if (!parent.delimiters.splice(node.index, 1)) return {
-			msg:	msg_internal_error,
-			token:	node.token,
-		};
-	}
+	if (!spliceNodes(parent.nodes, parent.delimiters, node.index, init ? 2 : 1, var_def_node)) 
+		return makeError(msg_internal_error, node.token);
 }
 
 function pass_stat_return(node) {
@@ -347,16 +407,8 @@ function pass_stat_return(node) {
 		arg_node.parent = ret_node;
 		delete arg_node.index;
 
-		if (!spliceNodes(parent.nodes, node.index, 2, [ ret_node ])) return {
-			msg:	msg_internal_error,
-			token:	node.token,
-		};
-
-		// remove delimiters
-		if (!parent.delimiters.splice(node.index, 1)) return {
-			msg:	msg_internal_error,
-			token:	node.token,
-		};
+		if (!spliceNodes(parent.nodes, parent.delimiters, node.index, 2, ret_node))
+			return makeError(msg_internal_error, node.token);
 	} else {
 		return {
 			msg:	'expected an return argument or semicolon \';\'',
@@ -525,33 +577,33 @@ function pass_final(node) {
 			break;
 		case ASTNodeType.DELIMIT:
 			const parent = node.parent;
-			if (!parent) return {
-				msg:	msg_no_parent,
-				token:	node.token,
-			};
-			if (parent.type !== ASTNodeType.ROOT && parent.type !== NodeType.ROOT) return {
-				msg:	'unexpected delimiter',
-				token:	node.token,
-			};
-			parent.nodes.splice(node.index, 1);
+			if (!parent) return makeError(msg_no_parent, node.token);
+			if (parent.type !== ASTNodeType.ROOT && parent.type !== NodeType.ROOT)
+				return makeError('unexpected delimiter', node.token);
+			if (!spliceNodes(parent.nodes, parent.delimiters, node.index, 1))
+				return makeError(msg_internal_error, node.token);
 			break;
 	}
 }
 
 function transform(node) {
+	let err;
+
 	const passes = [
+		pass_namespace,
 		pass_func_def, pass_var_def, pass_stat_return,
 		pass_func_call, pass_expression, pass_primitive, pass_chunk,
 		pass_final,
 	];
 
-	let err;
 	for (const func of passes) {
 		err = traverseNodes(node, func);
 		if (err) {
 			return err;
 		}
 	}
+
+	//printAST(node);
 }
 
 

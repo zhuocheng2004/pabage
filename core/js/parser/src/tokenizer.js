@@ -53,10 +53,12 @@ const TokenType = {
 
 	DCOLON:		120,	// ::
 
-	// virtual tokens generated during parse
+	// virtual tokens generated during parsing
 	EMPTY:		200,
 	ATTACH:		201,
-};
+
+	// custom tokens start from 1000
+}
 
 function isLatinOrUnderscore(ch) {
 	return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch === '_';
@@ -334,11 +336,20 @@ function tokenize(text) {
 			break;
 		}
 
+		if (tryGetIdentifier(context)) {
+			continue;
+		} else if (tryGetNumber(context)) {
+			continue;
+		} else if (tryGetString(context)) {
+			continue;
+		}
+
+
 		let tokenType = undefined;
 		let failed = false;
 
 		const pos0 = context.pos, line0 = context.line, col0 = context.col;
-
+	
 		const ch0 = text[pos];
 		const ch1 = pos <= end - 2 ? text[pos+1] : undefined;
 		switch (ch0) {
@@ -485,14 +496,6 @@ function tokenize(text) {
 			continue;
 		}
 
-		if (tryGetIdentifier(context)) {
-			continue;
-		} else if (tryGetNumber(context)) {
-			continue;
-		} else if (tryGetString(context)) {
-			continue;
-		}
-
 		if (!context.err) {
 			context.err = 'unrecognized token';
 		}
@@ -512,7 +515,7 @@ function tokenize(text) {
 	};
 }
 
-module.exports = {
-	TokenType:	TokenType,
-	tokenize:	tokenize,
+export {
+	TokenType,
+	tokenize,
 };

@@ -1,13 +1,13 @@
 
 const util = require('./util');
-const resultValue = util.resultValue, resultError = util.resultError;
+const makeError = util.makeError, resultValue = util.resultValue, resultError = util.resultError;
 
 const transformer = require('./transormer');
 const NodeType = transformer.NodeType, OperatorType = transformer.OperatorType;
 
 const ObjectType = {
 	OBJECT:		1,	// value
-	FUNC:		2,	// args, body
+	FUNC:		2,	// args, body, path
 	NATIVE_FUNC:	3,	// arg_types, ret_type, handle
 	UNDEF:		10,
 	NUMBER: 	11,	// value,
@@ -134,20 +134,53 @@ function addTokenIfError(result, token) {
 	return result;
 }
 
-function getVarHanlde(context, name) {
-	let handle;
+function getPathFrame(context, path = undefined) {
+	if (!path) path = context.path;
+	if (path) {
+		let tree = context.root;
+		for (let name of path) {
+			let sub_tree = tree.tree[name];
+			if (!sub_tree) {
+				sub_tree = {
+					tree:	{},
+					defs:	{},
+				};
+				tree.tree[name] = sub_tree;
+			}
+			tree = sub_tree;
+		}
+		return tree.defs;
+	} else {
+		return context.root.defs;
+	}
+}
 
-	const globals = context.globals, stack = context.stack;
+function getVarHanlde(context, name, path) {
+	let handle, frame;
+
+	if (path) {
+		frame = getPathFrame(context, path);
+		return frame[name];
+	}
+
+	const stack = context.stack;
 	for (let i = stack.length - 1; i >= 0; i--) {
-		const frame = stack[i];
+		frame = stack[i];
 		if (handle = frame[name]) return handle;
 	}
 
-	if (handle = globals[name]) return handle;
+	frame = context.root.defs;
+	if (handle = frame[name]) return handle;
+
+	frame = getPathFrame(context);
+	if (frame) {
+		handle = frame[name];
+		if (handle) return handle;
+	}
 }
 
-function getVar(context, name) {
-	const varHandle = getVarHanlde(context, name);
+function getVar(context, name, path = undefined) {
+	const varHandle = getVarHanlde(context, name, path);
 
 	if (varHandle) {
 		return resultValue(copyObj(varHandle.value));
@@ -166,7 +199,7 @@ function setVarAtHandle(handle, name, value) {
 	}
 }
 
-function addVar(frame, name, value, constant = false) {
+function addVar(frame, name, value, constant = false, path = undefined) {
 	const varHandle = frame[name];
 
 	if (varHandle) {
@@ -176,6 +209,9 @@ function addVar(frame, name, value, constant = false) {
 			constant:	constant,
 			value:		value,
 		};
+		if (path) {
+			frame[name].path = path;
+		}
 		return resultValue(frame[name]);
 	};
 }
@@ -355,6 +391,8 @@ function evaluate(context, node) {
 
 
 function func_call(context, func, args) {
+	const path_orig = context.path;
+	context.path = func.path;
 	if (func.body.nodes.length === 0) return resultUndefined();
 
 	if (!stackPush(context, {})) return resultError(msg_stack_exceed);
@@ -411,6 +449,8 @@ function func_call(context, func, args) {
 
 	if (stackPop(context) === undefined) return resultError(msg_stack_empty);
 
+	context.path = path_orig;
+
 	return result;
 }
 
@@ -427,29 +467,113 @@ function addNativeFunction(frame, name, arg_types, ret_type, handle) {
 }
 
 function initNativeFunctions(context) {
-	addVar(context.globals, 'e', { type: ObjectType.NUMBER, value: Math.E}, true);
-	addVar(context.globals, 'pi', { type: ObjectType.NUMBER, value: Math.PI}, true);
+	addVar(context.root.defs, 'e', { type: ObjectType.NUMBER, value: Math.E}, true);
+	addVar(context.root.defs, 'pi', { type: ObjectType.NUMBER, value: Math.PI}, true);
 
-	addNativeFunction(context.globals, 'min', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.min);
-	addNativeFunction(context.globals, 'max', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.max);
-	addNativeFunction(context.globals, 'exp', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.exp);
-	addNativeFunction(context.globals, 'cos', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.cos);
-	addNativeFunction(context.globals, 'sin', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.sin);
-	addNativeFunction(context.globals, 'log', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.log);
-	addNativeFunction(context.globals, 'log10', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.log10);
-	addNativeFunction(context.globals, 'pow', [ ObjectType.NUMBER, ObjectType.NUMBER ], ObjectType.NUMBER, Math.pow);
+	addNativeFunction(context.root.defs, 'min', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.min);
+	addNativeFunction(context.root.defs, 'max', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.max);
+	addNativeFunction(context.root.defs, 'exp', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.exp);
+	addNativeFunction(context.root.defs, 'cos', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.cos);
+	addNativeFunction(context.root.defs, 'sin', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.sin);
+	addNativeFunction(context.root.defs, 'log', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.log);
+	addNativeFunction(context.root.defs, 'log10', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.log10);
+	addNativeFunction(context.root.defs, 'pow', [ ObjectType.NUMBER, ObjectType.NUMBER ], ObjectType.NUMBER, Math.pow);
 
-	addNativeFunction(context.globals, 'print', [ ObjectType.OBJECT ], ObjectType.UNDEF, o => process.stdout.write(`${o}`));
+	addNativeFunction(context.root.defs, 'print', [ ObjectType.OBJECT ], ObjectType.UNDEF, o => process.stdout.write(`${o}`));
+}
+
+function initDefs(context, node) {
+	let nodes = [];
+	const path_orig = context.path;
+	if (node.type === NodeType.ROOT) {
+		let file_ns_node;
+		for (const child of node.nodes) {
+			if (child.type === NodeType.NS && !child.body) {
+				if (!file_ns_node) {
+					file_ns_node = child;
+				} else {
+					return makeError('file-scope namespace already declared before', child.token);
+				}
+			}
+		}
+		if (file_ns_node) {
+			context.path = file_ns_node.path;
+		} else {
+			context.path = [];
+		}
+
+		nodes = node.nodes;
+	} else if (node.type === NodeType.NS) {
+		const body = node.body;
+		context.path = path_orig.concat(node.path);
+		if (body.type === NodeType.CHUNK) {
+			nodes = body.nodes;
+		} else {
+			return makeError('expected a chunk', body.token);
+		}
+	}
+
+	const frame = getPathFrame(context);
+
+	let err = undefined, result;
+	for (const child of nodes) {
+		switch (child.type) {
+			case NodeType.NS:
+				if (child.body) {
+					err = initDefs(context, child);
+				} else if (node.type !== NodeType.ROOT) {
+					err = makeError('file-scope namespace can only be declared at file level', child.token);
+				}
+				break;
+			case NodeType.FUNC_DEF:
+				const func = {
+					type:	ObjectType.FUNC,
+					args:	child.args,
+					body:	child.body,
+					path:	context.path,
+				};
+				result = addVar(frame, child.name, func, true, context.path);
+				break;
+			case NodeType.VAR_DEF:
+				if (child.init) {
+					result = evaluate(context, child.init);
+					if (result.err) break;
+					result = addVar(frame, child.name, result.value, child.constant, context.path);
+					addTokenIfError(result, child.token);
+					if (result.err) break;
+					result = resultUndefined();
+				} else {
+					result = addVar(frame, child.name, {
+						type:	ObjectType.UNDEF,
+					}, child.constant, context.path);
+					addTokenIfError(result, child.token);
+					if (result.err) break;
+					result = resultUndefined();
+				}
+				break;
+			default:
+				return makeError('not a variable/function definition', child.token);
+		}
+		if (result && result.err) err = result.err;
+		if (err) break;
+	}
+
+	context.path = path_orig;
+
+	return err;
 }
 
 function run(ast, entry) {
-	//printAST(ast);
-
 	const context = {
-		globals:	{},
+		root:	{
+			tree:	{},
+			defs:	{},
+		},
 
 		maxStackSize:	1000,
 		stack:		[],
+
+		path:	[],
 	};
 
 	if (ast.type !== NodeType.ROOT) {
@@ -458,54 +582,22 @@ function run(ast, entry) {
 
 	initNativeFunctions(context);
 
-	let result = resultError('empty program');
-	for (const node of ast.nodes) {
-		switch (node.type) {
-			case NodeType.FUNC_DEF:
-				result = addVar(context.globals, node.name, {
-					type:		ObjectType.FUNC,
-					args:		node.args,
-					body:		node.body,
-				}, true);
-				addTokenIfError(result, node.token);
-				if (result.err) return result;
-				break;
-			case NodeType.VAR_DEF:
-				if (node.init) {
-					stackPush(context, {});
-					result = evaluate(context, node.init);
-					if (result.err) break;
-					stackPop(context);
-					result = addVar(context.globals, node.name, result.value, node.constant);
-					addTokenIfError(result, node.token);
-					if (result.err) break;
-					result = resultUndefined();
-				} else {
-					result = addVar(context.globals, node.name, {
-						type:	ObjectType.UNDEF,
-					}, node.constant);
-					addTokenIfError(result, node.token);
-					if (result.err) break;
-					result = resultUndefined();
-				}
-				break;
-			default:
-				return resultError('not a variable/function definition', node.token);
-		}
+	stackPush(context, {});
+	let err = initDefs(context, ast);
+	stackPop(context);
+	if (err) return { err: err };
 
-		if (result.err) break;
-	}
+	const entry_name = entry[entry.length - 1];
+	const entry_path = entry.slice(0, entry.length - 1);
 
-	if (result.err) return result;
-
-	result = getVar(context, entry);
+	const result = getVar(context, entry_name, entry_path);
 	if (result.err) return result;
 
 	const obj = result.value;
 	if (obj.type === ObjectType.FUNC || obj.type === ObjectType.NATIVE_FUNC) {
 		return func_call(context, obj, []);
 	} else {
-		return resultError(`'${entry}' is not a function`);
+		return resultError(`'${entry.join('.')}' is not a function`);
 	}
 }
 

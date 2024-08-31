@@ -5,7 +5,7 @@ if exists("b:current_syntax")
 endif
 
 syn keyword	pbgsTodo	contained TODO FIXME XXX
-syn keyword	pbgsDef		fn val var
+syn keyword	pbgsDef		ns fn val var
 syn keyword	pbgsCtrl	return
 
 syn match	pbgsCommentLine	"\/\/.*" contains=pbgsTodo

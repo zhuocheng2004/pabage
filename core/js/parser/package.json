@@ -1,0 +1,15 @@
+{
+  "name": "@pabage/parser",
+  "version": "0.0.1",
+  "description": "Parser for PBGS",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
+  },
+  "author": "parabola2004",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

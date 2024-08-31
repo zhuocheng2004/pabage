@@ -13,7 +13,7 @@ const ObjectType = runner_core.ObjectType, run = runner_core.run;
 const operators = [
 	{
 		enclose:	[ [ TokenType.LPAREN, TokenType.RPAREN ], [ TokenType.LBRACKET, TokenType.RBRACKET ], [ TokenType.LBRACE, TokenType.RBRACE ] ],
-		unary:		[ TokenType.PLUS, TokenType.MINUS ],
+		unary:		[ TokenType.PLUS, TokenType.MINUS, TokenType.DCOLON ],
 		binary:		[ TokenType.ATTACH, TokenType.DOT ],
 	},
 	{
@@ -131,5 +131,14 @@ function main(source, entry) {
 }
 
 if (process.argv.length >= 4) {
-	main(process.argv[2], process.argv[3]);
+	const source = process.argv[2];
+	const entry_raw = process.argv[3];
+	if (entry_raw) {
+		const entry = entry_raw.split('.');
+		main(source, entry);
+	} else {
+		console.error('No entry.');
+	}
+} else {
+	console.log('Usage: runner.js <source> <entry>')
 }

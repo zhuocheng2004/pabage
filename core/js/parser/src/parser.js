@@ -1,5 +1,5 @@
 
-const TokenType = require('./tokenizer').TokenType;
+import { TokenType } from './tokenizer.js';
 
 const ASTNodeType = {
 	ROOT:		1,	// nodes
@@ -320,7 +320,7 @@ function parse(tokens, operators) {
 	};
 }
 
-module.exports = {
-	ASTNodeType:	ASTNodeType,
-	parse:		parse,
+export {
+	ASTNodeType,
+	parse,
 };
