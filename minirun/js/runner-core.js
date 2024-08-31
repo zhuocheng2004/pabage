@@ -195,12 +195,12 @@ function computeBinary(operator, arg1, arg2) {
 	let v, v1, v2;
 	switch (arg1.type) {
 		case ObjectType.NUMBER:
-			arg2 = convertValue(arg2, ObjectType.NUMBER);
-			if (!arg2) {
+			const _arg2 = convertValue(arg2, ObjectType.NUMBER);
+			if (!_arg2) {
 				result = resultError(`cannot convert type [${objTypeName[arg2.type]}] to type [number]`);
 				break;
 			}
-			v1 = arg1.value, v2 = arg2.value;
+			v1 = arg1.value, v2 = _arg2.value;
 			switch (operator) {
 				case OperatorType.PLUS:
 					v = v1 + v2;
@@ -427,6 +427,9 @@ function addNativeFunction(frame, name, arg_types, ret_type, handle) {
 }
 
 function initNativeFunctions(context) {
+	addVar(context.globals, 'e', { type: ObjectType.NUMBER, value: Math.E}, true);
+	addVar(context.globals, 'pi', { type: ObjectType.NUMBER, value: Math.PI}, true);
+
 	addNativeFunction(context.globals, 'min', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.min);
 	addNativeFunction(context.globals, 'max', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.max);
 	addNativeFunction(context.globals, 'exp', [ ObjectType.NUMBER ], ObjectType.NUMBER, Math.exp);

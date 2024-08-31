@@ -101,6 +101,9 @@ function main(source, entry) {
 		let raw;
 		if (value) {
 			switch (value.type) {
+				case ObjectType.OBJECT:
+					raw = '[object';
+					break;
 				case ObjectType.FUNC:
 					raw = '[function]';
 					break;
@@ -112,6 +115,9 @@ function main(source, entry) {
 					break;
 				case ObjectType.NUMBER:
 					raw = value.value;
+					break;
+				case ObjectType.STRING:
+					raw = `${value.value}`;
 					break;
 				default:
 					raw = undefined;

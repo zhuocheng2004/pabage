@@ -1,0 +1,25 @@
+
+/*
+ * Demo Script TODO
+ */
+
+/* helper function */
+fn puts(s) {
+	print(s + '\n');
+}
+
+fn main() {
+	// constant
+	val t = 1;
+
+	val c = cos(t);
+	val s = sin(t);
+
+	puts('c='+ c);
+	puts('s=' + s);
+
+	val result = c*c + s*s;
+	puts('c*c + s*s = ' + result);
+
+	return 0;
+}
