@@ -24,7 +24,7 @@ const TokenType = {
 	DOT:		27,	// .
 	COLON:		28,	// :
 	SEMICOLON:	29,	// ;
-	ASSISN:		30,	// =
+	ASSIGN:		30,	// =
 	AMP:		31,	// &
 	VERT:		32,	// |
 	HAT:		33,	// ^
@@ -116,7 +116,7 @@ function tryGetIdentifier(context) {
 function tryGetNumber(context) {
 	const text = context.text, end = context.end;
 	let pos = context.pos;
-	const ch0 = text[pos];
+	const ch0 = text[pos], ch1 = text[pos+1];
 	if (!isDigit(ch0) && ch0 != '.') {
 		return false;
 	}
@@ -125,6 +125,9 @@ function tryGetNumber(context) {
 
 	let decimalDigits, value;
 	if (ch0 === '.') {
+		if (!isDigit(ch1)) {
+			return false;
+		}
 		value = 0;
 		decimalDigits = 0;
 	} else {
@@ -350,8 +353,8 @@ function tokenize(text) {
 
 		const pos0 = context.pos, line0 = context.line, col0 = context.col;
 	
-		const ch0 = text[pos];
-		const ch1 = pos <= end - 2 ? text[pos+1] : undefined;
+		const ch0 = text[pos0];
+		const ch1 = pos0 <= end - 2 ? text[pos0+1] : undefined;
 		switch (ch0) {
 			// skip empty tokens
 			case '\n':
@@ -473,8 +476,12 @@ function tokenize(text) {
 			case '=':
 				context.pos++; context.col++;
 				switch (ch1) {
+					case '=':
+						context.pos++; context.col++;
+						tokenType = TokenType.EQUAL;
+						break;
 					default:
-						tokenType = TokenType.ASSISN;
+						tokenType = TokenType.ASSIGN;
 						break;
 				}
 				break;

@@ -3,12 +3,12 @@ import { TokenType } from './tokenizer.js';
 
 const ASTNodeType = {
 	ROOT:		1,	// nodes
-	LEAF:		2,
-	DELIMIT:	3,
-	OP_ENCLOSE:	10,	// nodes delimiters
-	OP_PREFIX:	11,
+	PRIMITIVE:	2,	// token
+	DELIMIT:	3,	// token
+	OP_ENCLOSE:	10,	// token nodes delimiters
+	OP_PREFIX:	11,	// token node
 	OP_SUFFIX:	12,
-	OP_BINARY:	13,
+	OP_BINARY:	13,	// token node1 node2
 
 	// id >= 100 are for custom AST parser & transformer use
 };
@@ -25,7 +25,7 @@ function parsePrimitive(context) {
 	if (token.type === TokenType.IDENTIFIER || token.type === TokenType.NUMBER || token.type === TokenType.STRING) {
 		context.pos++;
 		return {
-			type:	ASTNodeType.LEAF,
+			type:	ASTNodeType.PRIMITIVE,
 			token:	token,
 		}
 	}
@@ -275,7 +275,6 @@ function parseExpr(context) {
 }
 
 function parseRoot(context) {
-	const end = context.end;
 	const nodes = []
 
 	const result = {
