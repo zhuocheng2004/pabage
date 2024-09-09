@@ -3,7 +3,7 @@ import { tokenize } from '../src/tokenizer';
 import { ASTNodeType, parse } from '../src/parser';
 import { NodeType, transform } from '../src/transformer';
 import pass_variable_definition from '../src/passes/variable_definition';
-import operators from './operators';
+import operators from '../src/operators';
 
 test('simple', () => {
 	const samples = [

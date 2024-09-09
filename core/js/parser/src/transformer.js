@@ -17,15 +17,26 @@ const NodeType = {
 	EXPR_FUNC_CALL:	145,	// func args
 }
 
+const OperatorType = {
+	POSITIVE:	1,	// +a
+	NEGAATIVE:	2,	// -b
+	ASSIGN:		10,	// a = b
+	PLUS:		20,	// a + b
+	MINUS:		21,	// a - b
+	MULTIPLY:	22,	// a * b
+	DIVIDE:		23,	// a / b
+};
+
+
+function traverseNodes (context, nodes, func, preorder) {
+	for (const child of nodes) {
+		const err = traverseAST(context, child, func, preorder);
+		if (err) return err;
+	}
+}
+
 function initChildrenTraversalMethods(context) {
 	const methods = context.childrenTraversalMethods;
-
-	const traverseNodes = (context, nodes, func, preorder) => {
-		for (const child of nodes) {
-			const err = traverseAST(context, child, func, preorder);
-			if (err) return err;
-		}
-	};
 
 	methods[ASTNodeType.ROOT] = (context, node, func, preorder) => traverseNodes(context, node.nodes, func, preorder);
 
@@ -104,11 +115,29 @@ function spliceNodes(nodes, delimiters, index, deleteCount, addedItem) {
 	}
 }
 
+function deleteNodes(nodes, delimiters, index, deleteCount) {
+	if (deleteCount < 0 || index + deleteCount > nodes.length) {
+		return makeError(err_msg_internal_error, nodes[index]);
+	}
+
+	nodes.splice(index, deleteCount);
+	
+	// adjust children indices after the deleted items
+	for (let i = index; i < nodes.length; i++) {
+		nodes[i].index = i;
+	}
+
+	// remove some delimiters
+	if (delimiters) {
+		delimiters.splice(index, deleteCount);
+	}
+}
+
 export {
-	NodeType,
-	traverseAST,
+	NodeType, OperatorType,
+	traverseAST, traverseNodes,
 	transform,
 
 	err_msg_internal_error, err_msg_no_parent,
-	spliceNodes
+	spliceNodes, deleteNodes
 };

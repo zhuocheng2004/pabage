@@ -5,8 +5,8 @@ import { NodeType, traverseAST, err_msg_no_parent, spliceNodes } from '../transf
 import { makeError } from '../util';
 
 /*
- * Variable Definitions:
- * 	val/var a [= ...]
+ * Variable Definition:
+ * 	val/var <var-name> [= ...]
  */
 function pass_variable_definition(context, ast) {
 	context.childrenTraversalMethods[NodeType.VAR_DEF] = (context, node, func, preorder) => {
@@ -15,8 +15,8 @@ function pass_variable_definition(context, ast) {
 		}
 	};
 
-	const err = traverseAST(context, ast, (_, node) => {
-		if (node.type !== ASTNodeType.PRIMITIVE || node.token.type !== TokenType.IDENTIFIER) return;
+	const err = traverseAST(context, ast, (_context, node) => {
+		if (!(node.type === ASTNodeType.PRIMITIVE && node.token.type === TokenType.IDENTIFIER)) return;
 		const data = node.token.data;
 		let isConstant;
 		if (data === 'val') {
@@ -35,7 +35,7 @@ function pass_variable_definition(context, ast) {
 		}
 
 		const def_node = parent.nodes[node.index + 1];
-		const delimited = parent.delimiters ? parent.delimiters[node.index]?.type !== TokenType.EMPTY : false;
+		const delimited = parent.delimiters ? parent.delimiters[node.index].type !== TokenType.EMPTY : false;
 		if (!def_node || delimited) return makeError('missing variable definition', node.token);
 
 		let var_name = undefined, init = undefined;
@@ -46,7 +46,7 @@ function pass_variable_definition(context, ast) {
 			if (def_token.type === TokenType.IDENTIFIER) {
 				var_name = def_token.data;
 			} else {
-				return makeError('expected an identifier as variable name', def_token);
+				return makeError('expected identifier as variable name', def_token);
 			}
 		} else if (def_node.type === ASTNodeType.OP_BINARY) {
 			// has initialization
@@ -55,7 +55,7 @@ function pass_variable_definition(context, ast) {
 			}
 			const node1 = def_node.node1, node2 = def_node.node2;
 			if (node1.type !== ASTNodeType.PRIMITIVE || node1.token.type !== TokenType.IDENTIFIER) {
-				return makeError('expected an identifier as variable name', node1.token);
+				return makeError('expected identifier as variable name', node1.token);
 			}
 
 			var_name = node1.token.data;
@@ -64,7 +64,7 @@ function pass_variable_definition(context, ast) {
 			return makeError('bad variable definition', def_node.token);
 		}
 
-		const node_var_def = {
+		const var_def_node = {
 			parent:	parent,
 			index:	node.index,
 			type:	NodeType.VAR_DEF,
@@ -73,9 +73,9 @@ function pass_variable_definition(context, ast) {
 			constant:	isConstant,
 		};
 
-		if (init) node_var_def.init = init;
+		if (init) var_def_node.init = init;
 
-		return spliceNodes(parent.nodes, parent.delimiters, node.index, 2, node_var_def);
+		return spliceNodes(parent.nodes, parent.delimiters, node.index, 2, var_def_node);
 	});
 
 	if (err) context.err = err;	

@@ -12,7 +12,7 @@ function pass_primitive(context, ast) {
 	context.childrenTraversalMethods[NodeType.LIT_NUMBER] = (_context, _node, _func, _preorder) => { };
 	context.childrenTraversalMethods[NodeType.LIT_STRING] = (_context, _node, _func, _preorder) => { };
 
-	const err = traverseAST(context, ast, (_, node) => {
+	const err = traverseAST(context, ast, (_context, node) => {
 		if (node.type !== ASTNodeType.PRIMITIVE) return;
 
 		const token = node.token;
