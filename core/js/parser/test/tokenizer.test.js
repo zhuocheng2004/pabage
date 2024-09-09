@@ -117,7 +117,7 @@ test('dot', () => {
 	expect(tokens[3].type).toBe(TokenType.PLUS);
 	expect(tokens[4].type).toBe(TokenType.NUMBER);
 	expect(tokens[4].data).toBe(1.2);
-})
+});
 
 test('misc', () => {
 	const samples = [

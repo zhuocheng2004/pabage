@@ -5,6 +5,7 @@ import { NodeType, transform } from '../src/transformer';
 import pass_chunk from '../src/passes/chunk';
 import operators from '../src/operators';
 
+
 test('simple', () => {
 	const samples = [
 		{
@@ -63,4 +64,4 @@ test('simple', () => {
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);
 	}
-})
+});

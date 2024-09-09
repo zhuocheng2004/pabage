@@ -5,6 +5,7 @@ import { NodeType, transform } from '../src/transformer';
 import pass_primitive from '../src/passes/primitive';
 import operators from '../src/operators';
 
+
 test('simple', () => {
 	const samples = [
 		{
@@ -55,7 +56,7 @@ test('in expression', () => {
 					name:	'a'
 				}),
 				node2:	expect.objectContaining({
-					type:	ASTNodeType.OP_ENCLOSE,
+					type:	ASTNodeType.OP_GROUP,
 					nodes:	[
 						expect.objectContaining({
 							type: ASTNodeType.OP_BINARY,
@@ -88,7 +89,7 @@ test('in expression', () => {
 					})
 				}),
 				node2:	expect.objectContaining({
-					type:	ASTNodeType.OP_ENCLOSE,
+					type:	ASTNodeType.OP_GROUP,
 					nodes:	[
 						expect.objectContaining({
 							type:	NodeType.LIT_NUMBER,

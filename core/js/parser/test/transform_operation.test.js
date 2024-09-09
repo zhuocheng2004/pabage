@@ -1,0 +1,147 @@
+
+import { tokenize } from '../src/tokenizer';
+import { ASTNodeType, parse } from '../src/parser';
+import { NodeType, OperatorType, transform } from '../src/transformer';
+import pass_operation from '../src/passes/operation';
+import operators from '../src/operators';
+
+
+test('simple', () => {
+	const samples = [
+		{
+			text:	'a + -b',
+			ast:	expect.objectContaining({
+				type:	ASTNodeType.ROOT,
+				nodes:	[
+					expect.objectContaining({
+						type:	NodeType.EXPR_BINARY,
+						operator:	OperatorType.PLUS,
+						arg1:	expect.objectContaining({ type:	ASTNodeType.PRIMITIVE }),
+						arg2:	expect.objectContaining({
+							type:	NodeType.EXPR_UNARY,
+							operator:	OperatorType.NEGATIVE,
+							arg:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						})
+					}),
+				]
+			})
+		},
+		{
+			text:	'(((((a)) + (-(b)))))',
+			ast:	expect.objectContaining({
+				type:	ASTNodeType.ROOT,
+				nodes:	[
+					expect.objectContaining({
+						type:	NodeType.EXPR_BINARY,
+						operator:	OperatorType.PLUS,
+						arg1:	expect.objectContaining({ type:	ASTNodeType.PRIMITIVE }),
+						arg2:	expect.objectContaining({
+							type:	NodeType.EXPR_UNARY,
+							operator:	OperatorType.NEGATIVE,
+							arg:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						})
+					}),
+				]
+			})
+		},
+		{
+			text:	'a + b - c',
+			ast:	expect.objectContaining({
+				type:	ASTNodeType.ROOT,
+				nodes:	[
+					expect.objectContaining({
+						type:	NodeType.EXPR_BINARY,
+						operator:	OperatorType.MINUS,
+						arg1:	expect.objectContaining({
+							type:	NodeType.EXPR_BINARY,
+							operator:	OperatorType.PLUS,
+							arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+							arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						}),
+						arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+					}),
+				]
+			})
+		},
+		{
+			text:	'a + (b - c)',
+			ast:	expect.objectContaining({
+				type:	ASTNodeType.ROOT,
+				nodes:	[
+					expect.objectContaining({
+						type:	NodeType.EXPR_BINARY,
+						operator:	OperatorType.PLUS,
+						arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+						arg2:	expect.objectContaining({
+							type:	NodeType.EXPR_BINARY,
+							operator:	OperatorType.MINUS,
+							arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+							arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						})
+					}),
+				]
+			})
+		},
+		{
+			text:	'a + b * c / d',
+			ast:	expect.objectContaining({
+				type:	ASTNodeType.ROOT,
+				nodes:	[
+					expect.objectContaining({
+						type:	NodeType.EXPR_BINARY,
+						operator:	OperatorType.PLUS,
+						arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+						arg2:	expect.objectContaining({
+							type:	NodeType.EXPR_BINARY,
+							operator:	OperatorType.DIVIDE,
+							arg1:	expect.objectContaining({
+								type:	NodeType.EXPR_BINARY,
+								operator:	OperatorType.MULTIPLY,
+								arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+								arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+							}),
+							arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						})
+					}),
+				]
+			})
+		},
+		{
+			text:	'a*a + b*b',
+			ast:	expect.objectContaining({
+				type:	ASTNodeType.ROOT,
+				nodes:	[
+					expect.objectContaining({
+						type:	NodeType.EXPR_BINARY,
+						operator:	OperatorType.PLUS,
+						arg1:	expect.objectContaining({
+							type:	NodeType.EXPR_BINARY,
+							operator:	OperatorType.MULTIPLY,
+							arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+							arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						}),
+						arg2:	expect.objectContaining({
+							type:	NodeType.EXPR_BINARY,
+							operator:	OperatorType.MULTIPLY,
+							arg1:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE }),
+							arg2:	expect.objectContaining({ type: ASTNodeType.PRIMITIVE })
+						})
+					}),
+				]
+			})
+		}
+	];
+
+	for (const sample of samples) {
+		const tokenizeResult = tokenize(sample.text);
+		expect(tokenizeResult.err).toBeUndefined();
+
+		const parseResult = parse(tokenizeResult.tokens, operators);
+		expect(parseResult.err).toBeUndefined();
+
+		const ast = parseResult.ast;
+		const err = transform(ast, [ pass_operation ]);
+		expect(err).toBeUndefined();
+		expect(ast).toEqual(sample.ast);
+	}
+});

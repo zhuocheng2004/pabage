@@ -60,6 +60,7 @@ const TokenType = {
 	// custom tokens start from 1000
 }
 
+
 function isLatinOrUnderscore(ch) {
 	return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch === '_';
 }

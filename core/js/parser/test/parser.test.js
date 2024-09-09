@@ -108,7 +108,7 @@ test('arithmetic expressions', () => {
 									token: expect.objectContaining({ type: TokenType.IDENTIFIER, data: 'pow' })
 								}),
 								node2: expect.objectContaining({
-									type: ASTNodeType.OP_ENCLOSE,
+									type: ASTNodeType.OP_GROUP,
 									token: expect.objectContaining({ type: TokenType.LPAREN }),
 									nodes: [
 										expect.objectContaining({
@@ -158,7 +158,7 @@ test('arithmetic expressions', () => {
 		expect(parseResult.err).toBeUndefined();
 		expect(parseResult.ast).toEqual(sample.ast);
 	}
-})
+});
 
 test('code segments', () => {
 	const samples = [
@@ -223,7 +223,7 @@ test('code segments', () => {
 								token: expect.objectContaining({ type: TokenType.IDENTIFIER, data: 'f' })
 							}),
 							node2: expect.objectContaining({
-								type: ASTNodeType.OP_ENCLOSE,
+								type: ASTNodeType.OP_GROUP,
 								token: expect.objectContaining({ type: TokenType.LPAREN }),
 								nodes: [
 									expect.objectContaining({
@@ -243,7 +243,7 @@ test('code segments', () => {
 							})
 						}),
 						node2: expect.objectContaining({
-							type: ASTNodeType.OP_ENCLOSE,
+							type: ASTNodeType.OP_GROUP,
 							token: expect.objectContaining({ type: TokenType.LBRACE }),
 							nodes: [
 								expect.objectContaining({
@@ -289,7 +289,7 @@ test('code segments', () => {
 								token:	expect.objectContaining({ type: TokenType.IDENTIFIER, data: 'if' })
 							}),
 							node2:	expect.objectContaining({
-								type:	ASTNodeType.OP_ENCLOSE,
+								type:	ASTNodeType.OP_GROUP,
 								token:	expect.objectContaining({ type: TokenType.LPAREN }),
 								nodes:	[
 									expect.objectContaining({
@@ -310,7 +310,7 @@ test('code segments', () => {
 							})
 						}),
 						node2:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE,
+							type:	ASTNodeType.OP_GROUP,
 							token:	expect.objectContaining({ type: TokenType.LBRACE }),
 							nodes:	[],
 							delimiters: []
@@ -325,7 +325,7 @@ test('code segments', () => {
 							token:	expect.objectContaining({ type: TokenType.IDENTIFIER, data: 'else' })
 						}),
 						node2:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE,
+							type:	ASTNodeType.OP_GROUP,
 							token:	expect.objectContaining({ type: TokenType.LBRACE }),
 							nodes:	[],
 							delimiters: []
@@ -344,4 +344,4 @@ test('code segments', () => {
 		expect(parseResult.err).toBeUndefined();
 		expect(parseResult.ast).toEqual(sample.ast);
 	}
-})
+});

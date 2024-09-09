@@ -8,7 +8,7 @@
     "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
   },
   "author": "parabola2004",
-  "license": "GPL-2.0-or-later",
+  "license": "MIT",
   "devDependencies": {
     "jest": "^29.7.0"
   }

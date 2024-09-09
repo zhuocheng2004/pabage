@@ -4,6 +4,7 @@ import { ASTNodeType } from '../parser';
 import { NodeType, traverseAST, err_msg_no_parent, spliceNodes } from '../transformer';
 import { makeError } from '../util';
 
+
 /*
  * Function Definition:
  * 	fn <func-name> (<arg1>, <arg2>, ...) { ... }
@@ -19,7 +20,7 @@ function pass_function_definition(context, ast) {
 		const parent = node.parent;
 		if (!parent) return makeError(err_msg_no_parent, node.token);
 
-		if (!(parent.type === ASTNodeType.ROOT || parent.type === ASTNodeType.OP_ENCLOSE)) {
+		if (!(parent.type === ASTNodeType.ROOT || parent.type === ASTNodeType.OP_GROUP)) {
 			return makeError('bad function definition position', node.token);
 		}
 
@@ -34,7 +35,7 @@ function pass_function_definition(context, ast) {
 		}
 
 		const node1 = def_node.node1, node2 = def_node.node2;
-		if (!(node2.type === ASTNodeType.OP_ENCLOSE && node2.token.type === TokenType.LBRACE)) {
+		if (!(node2.type === ASTNodeType.OP_GROUP && node2.token.type === TokenType.LBRACE)) {
 			return makeError('bad function body', node2.token);
 		}
 
@@ -49,7 +50,7 @@ function pass_function_definition(context, ast) {
 
 		const func_name = node11.token.data;
 
-		if (!(node12.type === ASTNodeType.OP_ENCLOSE && node12.token.type === TokenType.LPAREN)) {
+		if (!(node12.type === ASTNodeType.OP_GROUP && node12.token.type === TokenType.LPAREN)) {
 			return makeError('bad function argument list', node12.token);
 		}
 

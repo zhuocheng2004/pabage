@@ -5,6 +5,7 @@ import { NodeType, transform } from '../src/transformer';
 import pass_variable_definition from '../src/passes/variable_definition';
 import operators from '../src/operators';
 
+
 test('simple', () => {
 	const samples = [
 		{
@@ -15,7 +16,8 @@ test('simple', () => {
 					expect.objectContaining({
 						index:	0,
 						type:	NodeType.VAR_DEF,
-						name:	'a'
+						name:	'a',
+						constant:	false,
 					}),
 					expect.objectContaining({
 						index:	1,
@@ -24,7 +26,8 @@ test('simple', () => {
 					expect.objectContaining({
 						index:	2,
 						type:	NodeType.VAR_DEF,
-						name:	'b'
+						name:	'b',
+						constant:	true,
 					}),
 				]
 			})
@@ -38,6 +41,7 @@ test('simple', () => {
 						index:	0,
 						type:	NodeType.VAR_DEF,
 						name:	'a',
+						constant:	false,
 						init:	expect.objectContaining({
 							type:	ASTNodeType.PRIMITIVE
 						})
@@ -50,6 +54,7 @@ test('simple', () => {
 						index:	2,
 						type:	NodeType.VAR_DEF,
 						name:	'b',
+						constant:	true,
 						init:	expect.objectContaining({
 							type:	ASTNodeType.OP_BINARY
 						})
@@ -82,12 +87,13 @@ test('nested', () => {
 				nodes:	[
 					expect.objectContaining({
 						index:	0,
-						type:	ASTNodeType.OP_ENCLOSE,
+						type:	ASTNodeType.OP_GROUP,
 						nodes:	[
 							expect.objectContaining({
 								index:	0,
 								type:	NodeType.VAR_DEF,
 								name:	'x',
+								constant:	true,
 								init:	expect.objectContaining({
 									type:	ASTNodeType.OP_BINARY
 								})

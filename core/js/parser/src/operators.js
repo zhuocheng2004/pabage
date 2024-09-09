@@ -1,9 +1,10 @@
 
 import { TokenType } from "../src/tokenizer";
 
+
 const operators = [
 	{
-		enclose:	[ [ TokenType.LPAREN, TokenType.RPAREN ], [ TokenType.LBRACKET, TokenType.RBRACKET ], [ TokenType.LBRACE, TokenType.RBRACE ] ],
+		group:		[ [ TokenType.LPAREN, TokenType.RPAREN ], [ TokenType.LBRACKET, TokenType.RBRACKET ], [ TokenType.LBRACE, TokenType.RBRACE ] ],
 		unary:		[ TokenType.PLUS, TokenType.MINUS, TokenType.DCOLON ],
 		binary:		[ TokenType.ATTACH, TokenType.DOT ],
 	},

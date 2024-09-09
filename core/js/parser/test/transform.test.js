@@ -1,9 +1,10 @@
 
 import { tokenize } from '../src/tokenizer';
-import { ASTNodeType, parse } from '../src/parser';
-import { NodeType, transform } from '../src/transformer';
+import { parse } from '../src/parser';
+import { NodeType, OperatorType, transform } from '../src/transformer';
 import { standard_passes } from '../src/passes/passes';
 import operators from '../src/operators';
+
 
 test('simple', () => {
 	const samples = [
@@ -62,7 +63,7 @@ test('simple', () => {
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);
 	}
-})
+});
 
 
 test('complicated', () => {
@@ -75,7 +76,8 @@ test('complicated', () => {
 			/* demo function */
 			fn main() {
 				val c = cos(t);
-				val s = sin(t);
+				var s;
+				s = sin(t);
 				val ans = c*c + s*s;
 				print(ans);
 
@@ -103,6 +105,7 @@ test('complicated', () => {
 								expect.objectContaining({
 									type:	NodeType.VAR_DEF,
 									name:	'c',
+									constant:	true,
 									init:	expect.objectContaining({
 										type:   NodeType.EXPR_FUNC_CALL,
 										func:   expect.objectContaining({
@@ -120,7 +123,16 @@ test('complicated', () => {
 								expect.objectContaining({
 									type:	NodeType.VAR_DEF,
 									name:	's',
-									init:	expect.objectContaining({
+									constant:	false
+								}),
+								expect.objectContaining({
+									type:	NodeType.EXPR_BINARY,
+									operator:	OperatorType.ASSIGN,
+									arg1:	expect.objectContaining({
+										type:	NodeType.IDENTIFIER,
+										name:	's'
+									}),
+									arg2:	expect.objectContaining({
 										type:   NodeType.EXPR_FUNC_CALL,
 										func:   expect.objectContaining({
 											type:   NodeType.IDENTIFIER,
@@ -137,7 +149,35 @@ test('complicated', () => {
 								expect.objectContaining({
 									type:	NodeType.VAR_DEF,
 									name:	'ans',
-									init:	expect.objectContaining({})
+									constant:	true,
+									init:	expect.objectContaining({
+										type:	NodeType.EXPR_BINARY,
+										operator:	OperatorType.PLUS,
+										arg1:	expect.objectContaining({
+											type:	NodeType.EXPR_BINARY,
+											operator:	OperatorType.MULTIPLY,
+											arg1:	expect.objectContaining({
+												type:   NodeType.IDENTIFIER,
+												name:   'c'
+											}),
+											arg2:	expect.objectContaining({
+												type:   NodeType.IDENTIFIER,
+												name:   'c'
+											})
+										}),
+										arg2:	expect.objectContaining({
+											type:	NodeType.EXPR_BINARY,
+											operator:	OperatorType.MULTIPLY,
+											arg1:	expect.objectContaining({
+												type:   NodeType.IDENTIFIER,
+												name:   's'
+											}),
+											arg2:	expect.objectContaining({
+												type:   NodeType.IDENTIFIER,
+												name:   's'
+											})
+										})
+									})
 								}),
 								expect.objectContaining({
 									type:   NodeType.EXPR_FUNC_CALL,
@@ -179,4 +219,4 @@ test('complicated', () => {
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);
 	}
-})
+});

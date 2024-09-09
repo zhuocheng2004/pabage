@@ -20,7 +20,7 @@ function pass_return_statement(context, ast) {
 		const parent = node.parent;
 		if (!parent) return makeError(err_msg_no_parent, node.token);
 
-		if (parent.type !== ASTNodeType.OP_ENCLOSE) {
+		if (parent.type !== ASTNodeType.OP_GROUP) {
 			return makeError('bad return statement position', node.token);
 		}
 

@@ -3,6 +3,7 @@ import { ASTNodeType } from '../parser';
 import { NodeType, traverseAST, err_msg_no_parent, deleteNodes } from '../transformer';
 import { makeError } from '../util';
 
+
 /*
  * do final things:
  *	change root node type

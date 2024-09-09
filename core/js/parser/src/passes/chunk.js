@@ -4,6 +4,7 @@ import { ASTNodeType } from '../parser';
 import { NodeType, traverseAST, traverseNodes } from '../transformer';
 import { makeError } from '../util';
 
+
 /*
  * Chunks
  */
@@ -11,7 +12,7 @@ function pass_chunk(context, ast) {
 	context.childrenTraversalMethods[NodeType.CHUNK] = (context, node, func, preorder) => traverseNodes(context, node.nodes, func, preorder);
 
 	const err = traverseAST(context, ast, (_context, node) => {
-		if (!(node.type === ASTNodeType.OP_ENCLOSE && node.token.type === TokenType.LBRACE)) return;
+		if (!(node.type === ASTNodeType.OP_GROUP && node.token.type === TokenType.LBRACE)) return;
 
 		const nodes = node.nodes;
 		for (let i = 0; i < nodes.length - 1; i++) {

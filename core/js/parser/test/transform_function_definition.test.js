@@ -5,6 +5,7 @@ import { NodeType, transform } from '../src/transformer';
 import pass_function_definition from '../src/passes/function_definition';
 import operators from '../src/operators';
 
+
 test('simple', () => {
 	const samples = [
 		{
@@ -18,7 +19,7 @@ test('simple', () => {
 						name:	'main',
 						args:	[],
 						body:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE
+							type:	ASTNodeType.OP_GROUP
 						})
 					}),
 				]
@@ -35,7 +36,7 @@ test('simple', () => {
 						name:	'add',
 						args:	[ 'x', 'y' ],
 						body:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE
+							type:	ASTNodeType.OP_GROUP
 						})
 					}),
 				]
@@ -52,7 +53,7 @@ test('simple', () => {
 						name:	'f1',
 						args:	[ 'a' ],
 						body:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE
+							type:	ASTNodeType.OP_GROUP
 						})
 					}),
 					expect.objectContaining({
@@ -61,7 +62,7 @@ test('simple', () => {
 						name:	'f2',
 						args:	[ 'b' ],
 						body:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE
+							type:	ASTNodeType.OP_GROUP
 						})
 					}),
 				]

@@ -16,7 +16,7 @@ function pass_function_call(context, ast) {
 		if (!(node.type === ASTNodeType.OP_BINARY && node.token.type === TokenType.ATTACH)) return;
 
 		const node1 = node.node1, node2 = node.node2;
-		if (!(node2.type === ASTNodeType.OP_ENCLOSE && node2.token.type === TokenType.LPAREN)) {
+		if (!(node2.type === ASTNodeType.OP_GROUP && node2.token.type === TokenType.LPAREN)) {
 			return makeError('bad function call arguments', node.token);
 		}
 

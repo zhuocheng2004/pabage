@@ -2,9 +2,10 @@
 import { ASTNodeType } from './parser';
 import { makeError } from './util';
 
+
 const NodeType = {
 	ROOT:		100,	// nodes
-	NS:		101,	// path [body]
+	NS:			101,	// path [body]
 	CHUNK:		110,	// nodes
 	FUNC_DEF:	111,	// name args body
 	VAR_DEF:	112,	// name constant [init]
@@ -17,9 +18,10 @@ const NodeType = {
 	EXPR_FUNC_CALL:	145,	// func args
 }
 
+
 const OperatorType = {
 	POSITIVE:	1,	// +a
-	NEGAATIVE:	2,	// -b
+	NEGATIVE:	2,	// -b
 	ASSIGN:		10,	// a = b
 	PLUS:		20,	// a + b
 	MINUS:		21,	// a - b
@@ -44,7 +46,7 @@ function initChildrenTraversalMethods(context) {
 
 	methods[ASTNodeType.DELIMIT] = (_context, _node, _func, _preorder) => { };
 
-	methods[ASTNodeType.OP_ENCLOSE] = (context, node, func, preorder) => traverseNodes(context, node.nodes, func, preorder);
+	methods[ASTNodeType.OP_GROUP] = (context, node, func, preorder) => traverseNodes(context, node.nodes, func, preorder);
 
 	methods[ASTNodeType.OP_PREFIX] = (context, node, func, preorder) => traverseAST(context, node.node, func, preorder);
 

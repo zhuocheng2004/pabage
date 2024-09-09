@@ -4,6 +4,7 @@ import { ASTNodeType } from '../parser';
 import { NodeType, traverseAST } from '../transformer';
 import { makeError } from '../util';
 
+
 /*
  * This pass turns raw primitive nodes to processed nodes.
  */

@@ -5,6 +5,7 @@ import { NodeType, transform } from '../src/transformer';
 import pass_return_statement from '../src/passes/return_statement';
 import operators from '../src/operators';
 
+
 test('simple', () => {
 	const samples = [
 		{
@@ -15,7 +16,7 @@ test('simple', () => {
 					expect.objectContaining({}),
 					expect.objectContaining({
 						node2:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE,
+							type:	ASTNodeType.OP_GROUP,
 							nodes:	[
 								expect.objectContaining({
 									type:	NodeType.STAT_RETURN
@@ -34,7 +35,7 @@ test('simple', () => {
 					expect.objectContaining({}),
 					expect.objectContaining({
 						node2:	expect.objectContaining({
-							type:	ASTNodeType.OP_ENCLOSE,
+							type:	ASTNodeType.OP_GROUP,
 							nodes:	[
 								expect.objectContaining({
 									type:	NodeType.STAT_RETURN,

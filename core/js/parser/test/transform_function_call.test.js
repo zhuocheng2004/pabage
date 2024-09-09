@@ -5,6 +5,7 @@ import { NodeType, transform } from '../src/transformer';
 import pass_function_call from '../src/passes/function_call';
 import operators from '../src/operators';
 
+
 test('simple', () => {
 	const samples = [
 		{
@@ -60,7 +61,7 @@ test('simple', () => {
 				nodes:	[
 					expect.objectContaining({
 						type:	NodeType.EXPR_FUNC_CALL,
-						func:	expect.objectContaining({ type:	ASTNodeType.OP_ENCLOSE }),
+						func:	expect.objectContaining({ type:	ASTNodeType.OP_GROUP }),
 						args:	[
 							expect.objectContaining({ type:	ASTNodeType.PRIMITIVE }),
 						]
@@ -82,4 +83,4 @@ test('simple', () => {
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);
 	}
-})
+});

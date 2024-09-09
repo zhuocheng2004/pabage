@@ -4,6 +4,7 @@ import { ASTNodeType } from '../parser';
 import { NodeType, traverseAST, err_msg_no_parent, spliceNodes } from '../transformer';
 import { makeError } from '../util';
 
+
 /*
  * Variable Definition:
  * 	val/var <var-name> [= ...]
@@ -30,7 +31,7 @@ function pass_variable_definition(context, ast) {
 		const parent = node.parent;
 		if (!parent) return makeError(err_msg_no_parent, node.token);
 
-		if (!(parent.type === ASTNodeType.ROOT || parent.type === ASTNodeType.OP_ENCLOSE)) {
+		if (!(parent.type === ASTNodeType.ROOT || parent.type === ASTNodeType.OP_GROUP)) {
 			return makeError('bad variable definition position', node.token);
 		}
 

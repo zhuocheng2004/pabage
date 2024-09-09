@@ -1,11 +1,12 @@
 
 import { TokenType } from './tokenizer.js';
 
+
 const ASTNodeType = {
 	ROOT:		1,	// nodes
 	PRIMITIVE:	2,	// token
 	DELIMIT:	3,	// token
-	OP_ENCLOSE:	10,	// token nodes delimiters
+	OP_GROUP:	10,	// token nodes delimiters
 	OP_PREFIX:	11,	// token node
 	OP_SUFFIX:	12,
 	OP_BINARY:	13,	// token node1 node2
@@ -35,9 +36,9 @@ function parsePrimitive(context) {
 }
 
 /*
- * Parse the expressions enclosed by parentheses, brackets, braces etc.
+ * Parse the expressions grouped by parentheses, brackets, braces etc.
  */
-function parseEnclose(context, level) {
+function parseGroup(context, level) {
 	if (context.pos >= context.end) {
 		context.err = 'eof';
 		return undefined;
@@ -45,20 +46,20 @@ function parseEnclose(context, level) {
 
 	const operators = context.operators[level];
 
-	if (!operators.enclose) {
+	if (!operators.group) {
 		return undefined;
 	}
 
 	const token = context.tokens[context.pos];
 
-	for (const pair of operators.enclose) {
+	for (const pair of operators.group) {
 		if (token.type === pair[0]) {
 			context.pos++;
 
 			const nodes = [], delimiters = [];
 
 			let result =  {
-				type:		ASTNodeType.OP_ENCLOSE,
+				type:		ASTNodeType.OP_GROUP,
 				token:		token,
 				nodes:		nodes,
 				delimiters:	delimiters,
@@ -166,9 +167,9 @@ function _parseLevel(context, level) {
 		return parsePrimitive(context);
 	}
 
-	// 1: enclose operators
-	if (operators.enclose) {
-		const node = parseEnclose(context, level);
+	// 1: grouo operators
+	if (operators.group) {
+		const node = parseGroup(context, level);
 		if (node) {
 			return node;
 		}
@@ -246,8 +247,8 @@ function parseLevel(context, level) {
 
 			const operators = context.operators[0];
 
-			if (operators.enclose) {
-				const node2 = parseEnclose(context, 0);
+			if (operators.group) {
+				const node2 = parseGroup(context, 0);
 				if (node2) {
 					const attachToken = structuredClone(node2.token);
 					attachToken.data = token.type;
