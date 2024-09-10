@@ -71,10 +71,12 @@ test('complicated', () => {
 		{
 			text:	`
 			// demo program
+			ns test.example.demo;
+
 			val t = 1.23;
 
 			/* demo function */
-			fn main() {
+			export fn main() {
 				val c = cos(t);
 				var s;
 				s = sin(t);
@@ -88,6 +90,10 @@ test('complicated', () => {
 				type:	NodeType.ROOT,
 				nodes:	[
 					expect.objectContaining({
+						type:	NodeType.NS,
+						path:	[ 'test', 'example', 'demo' ]
+					}),
+					expect.objectContaining({
 						type:	NodeType.VAR_DEF,
 						name:	't',
 						init:	expect.objectContaining({
@@ -99,6 +105,7 @@ test('complicated', () => {
 						type:	NodeType.FUNC_DEF,
 						name:	'main',
 						args:	[],
+						export:	true,
 						body:	expect.objectContaining({
 							type:	NodeType.CHUNK,
 							nodes:	[

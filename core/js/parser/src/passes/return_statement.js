@@ -43,6 +43,9 @@ function pass_return_statement(context, ast) {
 			arg_node.parent = ret_node;
 			delete arg_node.index;
 
+			const err = pass_return_statement(context, arg_node);
+			if (err) return err;
+
 			return spliceNodes(parent.nodes, parent.delimiters, node.index, 2, ret_node);
 		} else {
 			return makeError('expected a return argument or semicolon \';\'', delimiter);

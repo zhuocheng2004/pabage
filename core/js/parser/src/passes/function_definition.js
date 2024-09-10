@@ -74,6 +74,9 @@ function pass_function_definition(context, ast) {
 		};
 		func_def_node.body.parent = func_def_node;
 
+		const err = pass_function_definition(context, node2);
+		if (err) return err;
+
 		return spliceNodes(parent.nodes, parent.delimiters, node.index, 2, func_def_node);
 	});
 

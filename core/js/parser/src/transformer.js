@@ -13,7 +13,7 @@ const NodeType = {
 	LIT_NUMBER:	121,	// value
 	LIT_STRING:	122,	// value
 	STAT_RETURN:	130,	// [arg]
-	EXPR_UNARY:	140,	// operator arg
+	EXPR_UNARY:		140,	// operator arg
 	EXPR_BINARY:	141,	// operator arg1 arg2
 	EXPR_FUNC_CALL:	145,	// func args
 }
@@ -72,14 +72,14 @@ function traverseAST(context, node, func, preorder = false) {
 			if (err) return err;
 		}
 	} else {
-		return makeError(`don't know how to traverse children of node type ${node.type}`, node.token);
+		return makeError(`don't know how to traverse node type ${node.type}`, node.token);
 	}
 }
 
 function transform(ast, passes) {
 	const context = {
 		err:	undefined,
-		childrenTraversalMethods:	[],
+		childrenTraversalMethods:	{},
 	};
 
 	initChildrenTraversalMethods(context);

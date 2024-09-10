@@ -76,6 +76,11 @@ function pass_variable_definition(context, ast) {
 
 		if (init) var_def_node.init = init;
 
+		if (init) {
+			const err = pass_variable_definition(context, init);
+			if (err) return err;
+		}
+
 		return spliceNodes(parent.nodes, parent.delimiters, node.index, 2, var_def_node);
 	});
 
