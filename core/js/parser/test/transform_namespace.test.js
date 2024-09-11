@@ -35,26 +35,26 @@ test('simple', () => {
 			})
 		},
 		{
-			text:	'ns java.lang.util;',
+			text:	'ns java.util;',
 			ast:	expect.objectContaining({
 				type:	ASTNodeType.ROOT,
 				nodes:	[
 					expect.objectContaining({
 						type: 	NodeType.NS,
-						path:	[ 'java', 'lang', 'util' ]
+						path:	[ 'java', 'util' ]
 					}),
 					expect.objectContaining({ type: ASTNodeType.DELIMIT }),
 				]
 			})
 		},
 		{
-			text:	'ns java.lang.util { val x = exp(1.2); }',
+			text:	'ns java.util { val x = exp(1.2); }',
 			ast:	expect.objectContaining({
 				type:	ASTNodeType.ROOT,
 				nodes:	[
 					expect.objectContaining({
 						type: 	NodeType.NS,
-						path:	[ 'java', 'lang', 'util' ],
+						path:	[ 'java', 'util' ],
 						body:	expect.objectContaining({ type:	ASTNodeType.OP_GROUP })
 					}),
 				]

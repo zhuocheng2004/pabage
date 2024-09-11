@@ -1,7 +1,7 @@
 
 import { TokenType } from '../tokenizer';
 import { ASTNodeType } from '../parser';
-import { NodeType, deleteNodes, traverseAST } from '../transformer';
+import { NodeType, traverseAST, isIdentifier, deleteNodes } from '../transformer';
 import { makeError } from '../util';
 
 /*
@@ -11,8 +11,7 @@ import { makeError } from '../util';
  */
 function pass_export(context, ast) {
 	const err = traverseAST(context, ast, (_context, node) => {
-		if (!(node.type === ASTNodeType.PRIMITIVE && node.token.type === TokenType.IDENTIFIER)) return;
-		if (node.token.data !== 'export') return;
+		if (!isIdentifier(node, 'export')) return;
 
 		const parent = node.parent;
 		if (!parent) return makeError(err_msg_no_parent, node.token);

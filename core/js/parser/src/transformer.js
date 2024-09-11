@@ -1,4 +1,5 @@
 
+import { TokenType } from './tokenizer';
 import { ASTNodeType } from './parser';
 import { makeError } from './util';
 
@@ -13,6 +14,7 @@ const NodeType = {
 	LIT_NUMBER:	121,	// value
 	LIT_STRING:	122,	// value
 	STAT_RETURN:	130,	// [arg]
+	STAT_IMPORT:	131,	// path name
 	EXPR_UNARY:		140,	// operator arg
 	EXPR_BINARY:	141,	// operator arg1 arg2
 	EXPR_FUNC_CALL:	145,	// func args
@@ -95,6 +97,44 @@ function transform(ast, passes) {
 const err_msg_internal_error = 'compiler internal error';
 const err_msg_no_parent = 'non-root node has no parent';
 
+
+/* Helper Functions */
+function isIdentifier(node, name) {
+	if (!(node.type === ASTNodeType.PRIMITIVE && node.token.type === TokenType.IDENTIFIER)) {
+		return false;
+	}
+
+	return node.token.data === name;
+}
+
+function get_ns_path(node) {
+	const token = node.token;
+	if (node.type === ASTNodeType.PRIMITIVE) {
+		if (token.type === TokenType.IDENTIFIER) {
+			return { value: [ token.data ] };
+		} else {
+			return { err: makeError('expected identifier', token) };
+		}
+	}
+
+	if (!(node.type === ASTNodeType.OP_BINARY && token.type === TokenType.DOT)) {
+		return { err: makeError('expected dot \'.\'', token) };
+	}
+
+	const node1 = node.node1, node2 = node.node2;
+	if (!(node2.type === ASTNodeType.PRIMITIVE && node2.token.type === TokenType.IDENTIFIER)) {
+		return { err: makeError('expected identifier', node2.token) };
+	}
+	const name = node2.token.data;
+
+	const result = get_ns_path(node1);
+	if (result.err) return err;
+	const path = result.value;
+	path.push(name);
+
+	return { value: path };
+}
+
 /*
  * Replace some sibling nodes with a new item, and recalculate indices
  * Useful in AST transformations
@@ -141,5 +181,7 @@ export {
 	transform,
 
 	err_msg_internal_error, err_msg_no_parent,
+	isIdentifier,
+	get_ns_path,
 	spliceNodes, deleteNodes
 };

@@ -73,6 +73,10 @@ test('complicated', () => {
 			// demo program
 			ns test.example.demo;
 
+			import core.io.print;
+			import core.math.cos;
+			import core.math.sin;
+
 			val t = 1.23;
 
 			/* demo function */
@@ -92,6 +96,21 @@ test('complicated', () => {
 					expect.objectContaining({
 						type:	NodeType.NS,
 						path:	[ 'test', 'example', 'demo' ]
+					}),
+					expect.objectContaining({
+						type:	NodeType.STAT_IMPORT,
+						path:	[ 'core', 'io' ],
+						name:	'print'
+					}),
+					expect.objectContaining({
+						type:	NodeType.STAT_IMPORT,
+						path:	[ 'core', 'math' ],
+						name:	'cos'
+					}),
+					expect.objectContaining({
+						type:	NodeType.STAT_IMPORT,
+						path:	[ 'core', 'math' ],
+						name:	'sin'
 					}),
 					expect.objectContaining({
 						type:	NodeType.VAR_DEF,

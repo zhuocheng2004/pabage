@@ -1,37 +1,9 @@
 
 import { TokenType } from '../tokenizer';
 import { ASTNodeType } from '../parser';
-import { NodeType, spliceNodes, traverseAST } from '../transformer';
+import { NodeType, traverseAST, isIdentifier, get_ns_path, spliceNodes } from '../transformer';
 import { makeError } from '../util';
 
-
-function get_ns_path(node) {
-	const token = node.token;
-	if (node.type === ASTNodeType.PRIMITIVE) {
-		if (token.type === TokenType.IDENTIFIER) {
-			return { value: [ token.data ] };
-		} else {
-			return { err: makeError('expected identifier', token) };
-		}
-	}
-
-	if (!(node.type === ASTNodeType.OP_BINARY && token.type === TokenType.DOT)) {
-		return { err: makeError('expected dot \'.\'', token) };
-	}
-
-	const node1 = node.node1, node2 = node.node2;
-	if (!(node2.type === ASTNodeType.PRIMITIVE && node2.token.type === TokenType.IDENTIFIER)) {
-		return { err: makeError('expected identifier', node2.token) };
-	}
-	const name = node2.token.data;
-
-	const result = get_ns_path(node1);
-	if (result.err) return err;
-	const path = result.value;
-	path.push(name);
-
-	return { value: path };
-}
 
 /*
  * Namespace
@@ -42,8 +14,7 @@ function pass_namespace(context, ast) {
 	};
 
 	const err = traverseAST(context, ast, (_context, node) => {
-		if (!(node.type === ASTNodeType.PRIMITIVE && node.token.type === TokenType.IDENTIFIER)) return;
-		if (node.token.data !== 'ns') return;
+		if (!isIdentifier(node, 'ns')) return;
 
 		const parent = node.parent;
 		if (!parent) return makeError(err_msg_no_parent, node.token);

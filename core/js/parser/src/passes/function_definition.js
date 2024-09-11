@@ -1,7 +1,7 @@
 
 import { TokenType } from '../tokenizer';
 import { ASTNodeType } from '../parser';
-import { NodeType, traverseAST, err_msg_no_parent, spliceNodes } from '../transformer';
+import { NodeType, traverseAST, err_msg_no_parent, isIdentifier, spliceNodes } from '../transformer';
 import { makeError } from '../util';
 
 
@@ -14,8 +14,7 @@ function pass_function_definition(context, ast) {
 		(context, node, func, preorder) =>  traverseAST(context, node.body, func, preorder);
 	
 	const err = traverseAST(context, ast, (_context, node) => {
-		if (!(node.type === ASTNodeType.PRIMITIVE && node.token.type === TokenType.IDENTIFIER)) return;
-		if (node.token.data !== 'fn') return;
+		if (!isIdentifier(node, 'fn')) return;
 
 		const parent = node.parent;
 		if (!parent) return makeError(err_msg_no_parent, node.token);

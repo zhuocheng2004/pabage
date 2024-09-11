@@ -40,7 +40,7 @@ test('identifier', () => {
 	const samples = [
 		[ ' a ', 1, [ 'a' ] ],  [ '_\n', 1, [ '_' ] ], [ '/*123*/abcd//ABC', 1, [ 'abcd' ] ],
 		[ '\t  a123b\n', 1, [ 'a123b' ] ], [ '_ab12', 1, [ '_ab12' ] ], [ '__12ab', 1, [ '__12ab' ] ],
-		[ 'Java_com_example_Main', 1, [ 'Java_com_example_Main' ] ],
+		[ 'Java_com_example_main_Main', 1, [ 'Java_com_example_main_Main' ] ],
 		[ '_ZSt4copyIN4llvm11po_iteratorIPNS0_15MachineFunctionENS0_11SmallPtrSetIPNS0_17MachineBasicBlockELj8EEELb0ENS0_11GraphTraitsIS3_EEEESt20back_insert_iteratorISt6vectorIS6_SaIS6_EEEET0_T_SH_SG_', 
 			1, [ '_ZSt4copyIN4llvm11po_iteratorIPNS0_15MachineFunctionENS0_11SmallPtrSetIPNS0_17MachineBasicBlockELj8EEELb0ENS0_11GraphTraitsIS3_EEEESt20back_insert_iteratorISt6vectorIS6_SaIS6_EEEET0_T_SH_SG_' ] ],
 		[ ' A b _ ', 3, [ 'A', 'b', '_' ]],
