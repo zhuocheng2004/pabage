@@ -1,8 +1,8 @@
 
-import { TokenType } from '../tokenizer';
-import { ASTNodeType } from '../parser';
-import { NodeType, OperatorType, traverseAST, traverseNodes } from '../transformer';
-import { makeError } from '../util';
+import { TokenType } from '../tokenizer.js';
+import { ASTNodeType } from '../parser.js';
+import { NodeType, OperatorType, traverseAST } from '../transformer.js';
+import { makeError } from '../util.js';
 
 
 function pass_operation(context, ast) {

@@ -1,9 +1,9 @@
 
-import { tokenize } from '../src/tokenizer';
-import { ASTNodeType, parse } from '../src/parser';
-import { NodeType, transform } from '../src/transformer';
-import pass_namespace from '../src/passes/namespace';
-import operators from '../src/operators';
+import { tokenize } from '../src/tokenizer.js';
+import { ASTNodeType, parse } from '../src/parser.js';
+import { NodeType, transform } from '../src/transformer.js';
+import pass_namespace from '../src/passes/namespace.js';
+import operators from '../src/operators.js';
 
 
 test('simple', () => {

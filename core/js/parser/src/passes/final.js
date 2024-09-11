@@ -1,7 +1,7 @@
 
-import { ASTNodeType } from '../parser';
-import { NodeType, traverseAST, err_msg_no_parent, deleteNodes } from '../transformer';
-import { makeError } from '../util';
+import { ASTNodeType } from '../parser.js';
+import { NodeType, traverseAST, err_msg_no_parent, deleteNodes } from '../transformer.js';
+import { makeError } from '../util.js';
 
 
 /*

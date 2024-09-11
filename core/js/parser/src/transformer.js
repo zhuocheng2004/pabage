@@ -1,7 +1,7 @@
 
-import { TokenType } from './tokenizer';
-import { ASTNodeType } from './parser';
-import { makeError } from './util';
+import { TokenType } from './tokenizer.js';
+import { ASTNodeType } from './parser.js';
+import { makeError } from './util.js';
 
 
 const NodeType = {

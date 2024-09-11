@@ -1,15 +1,15 @@
 
-import pass_chunk from './chunk'
-import pass_export from './export';
-import pass_final from './final';
-import pass_function_call from './function_call';
-import pass_function_definition from './function_definition';
-import pass_import from './import';
-import pass_namespace from './namespace';
-import pass_operation from './operation';
-import pass_primitive from './primitive';
-import pass_return_statement from './return_statement';
-import pass_variable_definition from './variable_definition';
+import pass_chunk from './chunk.js'
+import pass_export from './export.js';
+import pass_final from './final.js';
+import pass_function_call from './function_call.js';
+import pass_function_definition from './function_definition.js';
+import pass_import from './import.js';
+import pass_namespace from './namespace.js';
+import pass_operation from './operation.js';
+import pass_primitive from './primitive.js';
+import pass_return_statement from './return_statement.js';
+import pass_variable_definition from './variable_definition.js';
 
 
 /* These passes must be performed in this order */

@@ -1,0 +1,6 @@
+ns test;
+
+export fn main() {
+	return 0;
+}
+

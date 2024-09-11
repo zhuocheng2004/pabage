@@ -1,9 +1,9 @@
 
-import { tokenize } from '../src/tokenizer';
-import { ASTNodeType, parse } from '../src/parser';
-import { NodeType, OperatorType, transform } from '../src/transformer';
-import pass_operation from '../src/passes/operation';
-import operators from '../src/operators';
+import { tokenize } from '../src/tokenizer.js';
+import { ASTNodeType, parse } from '../src/parser.js';
+import { NodeType, OperatorType, transform } from '../src/transformer.js';
+import pass_operation from '../src/passes/operation.js';
+import operators from '../src/operators.js';
 
 
 test('simple', () => {

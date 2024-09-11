@@ -1,0 +1,16 @@
+ns test;
+
+import core.io.print;
+
+
+val hello_msg = "Hello, World!\n";
+
+fn sayHello() {
+	print(hello_msg);
+}
+
+export fn main() {
+	sayHello();
+	return 0;
+}
+

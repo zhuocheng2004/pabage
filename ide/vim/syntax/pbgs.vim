@@ -6,7 +6,7 @@ endif
 
 syn keyword	pbgsTodo	contained TODO FIXME XXX
 syn keyword	pbgsDef		ns fn val var
-syn keyword	pbgsCtrl	export return
+syn keyword	pbgsCtrl	export import return
 
 syn match	pbgsCommentLine	"\/\/.*" contains=pbgsTodo
 syn region	pbgsComment	start="/\*" end="\*/" contains=pbgsTodo

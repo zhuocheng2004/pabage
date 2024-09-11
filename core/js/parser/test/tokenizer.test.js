@@ -1,5 +1,5 @@
 
-import { TokenType, tokenize } from '../src/tokenizer'
+import { TokenType, tokenize } from '../src/tokenizer.js'
 
 
 test('empty strings have no tokens', () => {

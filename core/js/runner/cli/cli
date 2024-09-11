@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+basedir=`dirname "$0"`
+
+node ${basedir}/cli.js $@

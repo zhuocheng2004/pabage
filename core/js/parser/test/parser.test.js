@@ -1,7 +1,7 @@
 
-import { TokenType, tokenize } from '../src/tokenizer'
-import { ASTNodeType, parse } from '../src/parser'
-import operators from '../src/operators';
+import { TokenType, tokenize } from '../src/tokenizer.js'
+import { ASTNodeType, parse } from '../src/parser.js'
+import operators from '../src/operators.js';
 
 
 test('strings with no tokens', () => {

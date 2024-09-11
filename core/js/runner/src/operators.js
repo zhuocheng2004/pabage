@@ -1,5 +1,5 @@
 
-import { TokenType } from './tokenizer.js';
+import { TokenType } from "@pabage/parser";
 
 
 const operators = [

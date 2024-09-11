@@ -1,8 +1,8 @@
 
-import { TokenType } from '../tokenizer';
-import { ASTNodeType } from '../parser';
-import { NodeType, traverseAST, err_msg_no_parent, isIdentifier, get_ns_path, spliceNodes } from '../transformer';
-import { makeError } from '../util';
+import { TokenType } from '../tokenizer.js';
+import { ASTNodeType } from '../parser.js';
+import { NodeType, traverseAST, err_msg_no_parent, isIdentifier, get_ns_path, spliceNodes } from '../transformer.js';
+import { makeError } from '../util.js';
 
 
 /*
@@ -28,7 +28,7 @@ function pass_import(context, ast) {
 		}
 
 		if (!(path_node.type === ASTNodeType.OP_BINARY && path_node.token.type === TokenType.DOT)) {
-			return makeError('bad import path', node.token);
+			return makeError('bad import path', path_node.token);
 		}
 
 		const node1 = path_node.node1, node2 = path_node.node2;

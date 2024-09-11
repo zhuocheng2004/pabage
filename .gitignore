@@ -1,5 +1,6 @@
 
 # IDE
+.*.swp
 .vscode
 
 # build

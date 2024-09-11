@@ -1,11 +1,11 @@
 
-import { tokenize } from '../src/tokenizer';
-import { ASTNodeType, parse } from '../src/parser';
-import { NodeType, transform } from '../src/transformer';
-import pass_variable_definition from '../src/passes/variable_definition';
-import pass_function_definition from '../src/passes/function_definition';
-import pass_export from '../src/passes/export';
-import operators from '../src/operators';
+import { tokenize } from '../src/tokenizer.js';
+import { ASTNodeType, parse } from '../src/parser.js';
+import { NodeType, transform } from '../src/transformer.js';
+import pass_variable_definition from '../src/passes/variable_definition.js';
+import pass_function_definition from '../src/passes/function_definition.js';
+import pass_export from '../src/passes/export.js';
+import operators from '../src/operators.js';
 
 
 test('variable', () => {
