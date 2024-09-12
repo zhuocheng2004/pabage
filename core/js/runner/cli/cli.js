@@ -1,7 +1,8 @@
 
 import fs from 'node:fs/promises';
 import { tokenize, parse, operators, transform, standard_passes } from '@pabage/parser';
-import { ObjectType, Context } from '../src/context.js';
+import { ObjectType, Frame, Context } from '../src/context.js';
+import { setupRuntime, func_call } from '../src/runtime.js';
 
 
 function mapPromiseResult(promise, func) {
@@ -125,9 +126,9 @@ async function main(args) {
 	}
 
 	const context = new Context();
-	const err = context.setup(asts);
+	let err = context.setup(asts);
 	if (err) {
-		console.error(`Initialization Error in ${err.path ? err.path : '<unknown>'}: ${err.msg}`);
+		console.error(`Runtime Setup Error in ${err.path ? err.path : '<unknown>'}: ${err.msg}`);
 		return 1;
 	}
 
@@ -136,14 +137,14 @@ async function main(args) {
 		if (def_node.nodes[name]) {
 			def_node = def_node.nodes[name];
 		} else {
-			console.error(`cannot find ${entry}`);
+			console.error(`Cannot find ${entry}`);
 			return 1;
 		}
 	}
 
-	const result = def_node.get(entry_name);
+	let result = def_node.get(entry_name);
 	if (result.err) {
-		console.error(`cannot find ${entry}`);
+		console.error(`Error getting ${entry}: ${result.err.msg}`);
 		return 1;
 	}
 
@@ -152,10 +153,22 @@ async function main(args) {
 		console.error(`${entry} is not a function`);
 		return 1;
 	}
+	const entry_def_node = def_node.getRaw(entry_name).def_node;
 
-	console.log('We have found the entry');
+	err = setupRuntime(context);
+	if (err) {
+		console.error(`Runtime Init Error: ${err.msg}`);
+		return 1;
+	}
 
-	context.stack = [ entry_func.def_node ];
+	context.stack = [ new Frame(entry_def_node) ];
+	result = func_call(context, entry_func, []);
+	if (result.err) {
+		console.error(`Runtime Error: ${result.err.msg}`);
+		return 1;
+	}
+
+	return 0;
 }
 
 const ret = await main(process.argv);

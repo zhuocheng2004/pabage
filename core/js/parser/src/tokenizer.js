@@ -1,63 +1,56 @@
 
 const TokenType = {
-	EMPTY:		1,
-	IDENTIFIER:	2,
-	NUMBER:		3,
-	STRING:		4,
+	EMPTY:		'empty',
+	IDENTIFIER:	'identifier',
+	NUMBER:		'number',
+	STRING:		'string',
 
 	// single-char
-	LPAREN:		10,	// ()
-	RPAREN:		11,
-	LBRACKET:	12,	// []
-	RBRACKET:	13,
-	LBRACE:		14,	// {}
-	RBRACE:		15,
-	LANGLE:		16,	// <>
-	RANGLE:		17,
-	AT:		20,	// @
-	PLUS:		21,	// +
-	MINUS:		22,	// -
-	STAR:		23,	// *
-	SLASH:		24,	// /
-	PERCENT:	25,	// %
-	COMMA:		26,	// ,
-	DOT:		27,	// .
-	COLON:		28,	// :
-	SEMICOLON:	29,	// ;
-	ASSIGN:		30,	// =
-	AMP:		31,	// &
-	VERT:		32,	// |
-	HAT:		33,	// ^
-	HASH:		34,	// #
-	DOLLAR:		35,	// $
-	EXCLAM:		36,	// !
-	TILDE:		37,	// ~
-	BACKSLASH:	38,	// \
-	BACKQUOTE:	39,	// `
-	UNDERSCORE:	40,	// _
-	QUESTION:	41,	// ?
-	QUOTE:		42,	// '
-	DQUOTE:		43,	// "
+	LPAREN:		'left_parenthesis',		// ()
+	RPAREN:		'right_parenthesis',
+	LBRACKET:	'left_bracket',			// []
+	RBRACKET:	'right_bracket',
+	LBRACE:		'left_brace',			// {}
+	RBRACE:		'right_brace',
+	LANGLE:		'left_angle',			// <>
+	RANGLE:		'right_angle',
+	AT:			'at',			// @
+	PLUS:		'plus',			// +
+	MINUS:		'minus',		// -
+	STAR:		'star',			// *
+	SLASH:		'slash',		// /
+	PERCENT:	'percent',		// %
+	COMMA:		'comma',		// ,
+	DOT:		'dot',			// .
+	COLON:		'colon',		// :
+	SEMICOLON:	'semicolon',	// ;
+	ASSIGN:		'assign',		// =
+	AMP:		'ampersand',	// &
+	VERT:		'vertical',		// |
+	HAT:		'hat',			// ^
+	HASH:		'hash',			// #
+	DOLLAR:		'dollar',		// $
+	EXCLAM:		'exclamation',	// !
+	TILDE:		'tilde',		// ~
+	BACKSLASH:	'backslash',	// \
+	BACKQUOTE:	'backquote',	// `
+	UNDERSCORE:	'underscore',	// _
+	QUESTION:	'question',		// ?
+	QUOTE:		'quote',		// '
+	DQUOTE:		'double_quote',	// "
 
 	// multi-char
-	RARROW:		100,	// ->
-	RDARROW:	101,	// =>
-	EQUAL:		102,	// ==
-	NEQUAL:		103,	// !=
-	GEQUAL:		104,	// >=
-	LEGUAL:		105,	// <=
-	PLUSEQUAL:	110,	// +=
-	MINUSEQUAL:	111,	// -=
-	MULEQUAL:	112,	// *=
-	DIVEQUAL:	113,	// /=
+	RARROW:		'right_arrow',			// ->
+	RDARROW:	'right_double_arrow',	// =>
+	EQUAL:		'equal',				// ==
+	NEQUAL:		'not_equal',			// !=
+	GEQUAL:		'greater_than_equal',	// >=
+	LEGUAL:		'less_than_equal',		// <=
 
-	DCOLON:		120,	// ::
+	DCOLON:		'double_colon',	// ::
 
 	// virtual tokens generated during parsing
-	EMPTY:		200,
-	ATTACH:		201,
-
-	// custom tokens start from 1000
+	ATTACH:		'attach',
 }
 
 

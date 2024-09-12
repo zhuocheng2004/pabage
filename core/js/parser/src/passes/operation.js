@@ -45,6 +45,7 @@ function pass_operation(context, ast) {
 			node.type = NodeType.EXPR_UNARY;
 			node.operator = op;
 			node.arg = node.node;
+			node.arg.parent = node;
 			delete node.node;
 		} else if (node.type === ASTNodeType.OP_BINARY) {
 			let op = undefined;
@@ -72,6 +73,8 @@ function pass_operation(context, ast) {
 			node.operator = op;
 			node.arg1 = node.node1;
 			node.arg2 = node.node2;
+			node.arg1.parent = node;
+			node.arg2.parent = node;
 			delete node.node1;
 			delete node.node2;
 		}

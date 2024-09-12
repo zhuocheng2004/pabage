@@ -5,30 +5,30 @@ import { makeError } from './util.js';
 
 
 const NodeType = {
-	ROOT:		100,	// nodes
-	NS:			101,	// path [body]
-	CHUNK:		110,	// nodes
-	FUNC_DEF:	111,	// name args body
-	VAR_DEF:	112,	// name constant [init]
-	IDENTIFIER:	120,	// name [path]
-	LIT_NUMBER:	121,	// value
-	LIT_STRING:	122,	// value
-	STAT_RETURN:	130,	// [arg]
-	STAT_IMPORT:	131,	// path name
-	EXPR_UNARY:		140,	// operator arg
-	EXPR_BINARY:	141,	// operator arg1 arg2
-	EXPR_FUNC_CALL:	145,	// func args
+	ROOT:			'root',						// nodes
+	NS:				'namespace',				// path [body]
+	CHUNK:			'chunk',					// nodes
+	FUNC_DEF:		'function_definition',		// name args body
+	VAR_DEF:		'variable_definition',		// name constant [init]
+	IDENTIFIER:		'identifier',				// name [path]
+	LIT_NUMBER:		'literal_number',			// value
+	LIT_STRING:		'literal_string',			// value
+	STAT_RETURN:	'statement_return',			// [arg]
+	STAT_IMPORT:	'statement_import',			// path name
+	EXPR_UNARY:		'expression_unary',			// operator arg
+	EXPR_BINARY:	'expression_binary',		// operator arg1 arg2
+	EXPR_FUNC_CALL:	'expression_function_call',	// func args
 }
 
 
 const OperatorType = {
-	POSITIVE:	1,	// +a
-	NEGATIVE:	2,	// -b
-	ASSIGN:		10,	// a = b
-	PLUS:		20,	// a + b
-	MINUS:		21,	// a - b
-	MULTIPLY:	22,	// a * b
-	DIVIDE:		23,	// a / b
+	POSITIVE:	'positive',	// +a
+	NEGATIVE:	'negative',	// -b
+	ASSIGN:		'assign',	// a = b
+	PLUS:		'plus',		// a + b
+	MINUS:		'minus',	// a - b
+	MULTIPLY:	'multiply',	// a * b
+	DIVIDE:		'divide',	// a / b
 };
 
 

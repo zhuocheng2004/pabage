@@ -74,7 +74,10 @@ function pass_variable_definition(context, ast) {
 			constant:	isConstant,
 		};
 
-		if (init) var_def_node.init = init;
+		if (init) {
+			var_def_node.init = init;
+			init.parent = var_def_node;
+		}
 
 		if (init) {
 			const err = pass_variable_definition(context, init);

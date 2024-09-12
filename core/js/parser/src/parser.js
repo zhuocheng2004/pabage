@@ -3,15 +3,13 @@ import { TokenType } from './tokenizer.js';
 
 
 const ASTNodeType = {
-	ROOT:		1,	// nodes
-	PRIMITIVE:	2,	// token
-	DELIMIT:	3,	// token
-	OP_GROUP:	10,	// token nodes delimiters
-	OP_PREFIX:	11,	// token node
-	OP_SUFFIX:	12,
-	OP_BINARY:	13,	// token node1 node2
-
-	// id >= 100 are for custom AST parser & transformer use
+	ROOT:		'raw_root',			// nodes
+	PRIMITIVE:	'raw_primitive',	// token
+	DELIMIT:	'raw_delimit',		// token
+	OP_GROUP:	'raw_op_group',		// token nodes delimiters
+	OP_PREFIX:	'raw_op_prefix',	// token node
+	OP_SUFFIX:	'raw_op_suffix',
+	OP_BINARY:	'raw_op_binary',	// token node1 node2
 };
 
 
