@@ -1,4 +1,5 @@
 
+import path from 'node:path';
 import fs from 'node:fs/promises';
 import { tokenize, parse, operators, transform, standard_passes } from '@pabage/parser';
 import { ObjectType, Frame, Context } from '../src/context.js';
@@ -37,6 +38,7 @@ function printErrorContext(source, lineStart, col) {
 
 async function main(args) {
 	const pbgs_paths = [];
+	const js_paths = [];
 	let entry;
 	let args_passed = [];
 
@@ -53,6 +55,18 @@ async function main(args) {
 				return 1;
 			}
 			pbgs_paths.push(...paths);
+			i += 2;
+		} else if (arg === '-js') {
+			if (i === args.length - 1) {
+				console.error('no paths');
+				return 1;
+			}
+			const paths = parsePaths(args[i+1]);
+			if (paths === undefined) {
+				console.error('invalid paths');
+				return 1;
+			}
+			js_paths.push(...(paths.map(p => path.resolve(p))));
 			i += 2;
 		} else {
 			if (entry === undefined) {
@@ -132,19 +146,26 @@ async function main(args) {
 		return 1;
 	}
 
-	let def_node = context.global;
-	for (const name of entry_path) {
-		if (def_node.nodes[name]) {
-			def_node = def_node.nodes[name];
-		} else {
-			console.error(`Cannot find ${entry}`);
-			return 1;
+	// load init js modules
+	const js_modules = [];
+	for (const js_path of js_paths) {
+		js_modules.push(await import(js_path));
+	}
+
+	// do native init
+	for (const js_module of js_modules) {
+		if (js_module.init) {
+			err = js_module.init(context);
+			if (err) {
+				console.error(`Error initializing module ${js_module}: ${err.msg}`);
+				return 1;
+			}
 		}
 	}
 
-	let result = def_node.get(entry_name);
+	let result = context.findObjAtPath(context.global, entry_name, entry_path);
 	if (result.err) {
-		console.error(`Error getting ${entry}: ${result.err.msg}`);
+		console.error(`Error finding entry: ${result.err.msg}`);
 		return 1;
 	}
 
@@ -153,7 +174,6 @@ async function main(args) {
 		console.error(`${entry} is not a function`);
 		return 1;
 	}
-	const entry_def_node = def_node.getRaw(entry_name).def_node;
 
 	err = setupRuntime(context);
 	if (err) {
@@ -161,11 +181,22 @@ async function main(args) {
 		return 1;
 	}
 
-	context.stack = [ new Frame(entry_def_node) ];
+	context.stack = [ new Frame(entry_func.def_node) ];
 	result = func_call(context, entry_func, []);
 	if (result.err) {
 		console.error(`Runtime Error: ${result.err.msg}`);
 		return 1;
+	}
+
+	// do native exit
+	for (const js_module of js_modules) {
+		if (js_module.exit) {
+			err = js_module.exit(context);
+			if (err) {
+				console.error(`Error exiting module ${js_module}: ${err.msg}`);
+				return 1;
+			}
+		}
 	}
 
 	return 0;

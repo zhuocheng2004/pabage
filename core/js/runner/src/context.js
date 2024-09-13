@@ -10,9 +10,9 @@ const defaultOptions = {
 export const ObjectType = {
 	OBJECT:		'object',	// value
 	FUNC:		'function',	// args, body, def_node
-	NATIVE_FUNC:'native_function',	// arg_types, handle
+	NATIVE_FUNC:'native_function',	// arg_types, ret_type, handle
 	UNDEF:		'undefined',
-	NATIVE:		'native_object',	// data
+	NATIVE:		'native_object',	// obj
 	NUMBER:		'number',	// value
 	STRING:		'string',	// value
 };
@@ -158,6 +158,23 @@ export class DefNode {
 		}
 		return node;
 	}
+
+	getSubNode(path) {
+		let def_node = this;
+		for (const entry of path) {
+			if (def_node.nodes[entry]) {
+				def_node = def_node.nodes[entry];
+			} else {
+				let s = entry;
+				while (def_node !== this) {
+					s = (def_node.name ? def_node.name : '<unknown>') + '.'  + s;
+					def_node = def_node.parent;
+				}
+				return resultError(`cannot find namespace ${s}`);
+			}
+		}
+		return resultValue(def_node);
+	}
 }
 
 export class Frame {
@@ -174,6 +191,15 @@ function makeFunction(args, body, def_node) {
 		body:	body,
 		def_node:	def_node
 	};
+}
+
+function makeNativeFunction(arg_types, ret_type, handle) {
+	return {
+		type:	ObjectType.NATIVE_FUNC,
+		arg_types:	arg_types,
+		ret_type:	ret_type,
+		handle:	handle
+	}
 }
 
 /*
@@ -217,6 +243,7 @@ export class Context {
 		this.global = new DefNode();
 		this.stack = [];
 		this.toInit = [];
+		this.toImport = [];	// def_node path name
 	}
 
 	setup(asts) {
@@ -231,7 +258,7 @@ export class Context {
 			const def_node = new DefNode();
 			def_node.global = this.global;
 			this.stack = [ [ def_node ] ];
-			const err = this.initDefs(def_node, ast_node.nodes);
+			const err = this.initDefs(def_node, ast_node.nodes, true);
 			if (err) {
 				err.path = ast.path;
 				return err;
@@ -241,7 +268,8 @@ export class Context {
 		}
 	}
 
-	initDefs(def_node, ast_nodes) {
+	initDefs(def_node, ast_nodes, isRoot = false) {
+		let start_index = 0;
 		let start_ns = false;
 		const ast_node0 = ast_nodes[0];
 		if (ast_node0 && ast_node0.type === NodeType.NS) {
@@ -253,10 +281,28 @@ export class Context {
 				start_ns = true;
 				const err = this.stackPush(new Frame(def_node));
 				if (err) return err;
+				start_index = 1;
 			}
 		}
 
-		for (let i = (start_ns ? 1 : 0); i < ast_nodes.length; i++) {
+		// mark global imports
+		if (isRoot) {
+			while (true) {
+				const ast_node = ast_nodes[start_index];
+				if (ast_node.type === NodeType.STAT_IMPORT) {
+					this.toImport.push({
+						def_node:	def_node,
+						path:	ast_node.path,
+						name:	ast_node.name
+					});
+					start_index++;
+				} else {
+					break;
+				}
+			}
+		}
+
+		for (let i = start_index; i < ast_nodes.length; i++) {
 			const ast_node = ast_nodes[i];
 			let err, result;
 			switch (ast_node.type) {
@@ -289,6 +335,7 @@ export class Context {
 						return makeError('defining constant without initialization', ast_node.token);
 					}
 
+					// mark variable initializations
 					if (ast_node.init) {
 						result = def_node.addInit(var_name, ast_node.init, ast_node.constant);
 						this.toInit.push({
@@ -375,5 +422,18 @@ export class Context {
 		}
 
 		return resultError(`cannot find '${name}'`);
+	}
+
+	findObjAtPath(start_node, name, path) {
+		const result = start_node.getSubNode(path);
+		if (result.err) return result;
+		const def_node = result.value;
+
+		return def_node.get(name);
+	}
+
+	registerNativeFunction(path, name, arg_types, ret_type, handle) {
+		const def_node = this.global.getOrCreateSubNodes(path);
+		return def_node.add(name, makeNativeFunction(arg_types, ret_type, handle), true);
 	}
 }
