@@ -103,6 +103,7 @@ function tryGetIdentifier(context) {
 		pos:	pos0,
 		line:	line0,
 		col:	col0,
+		path:	context.path
 	});
 	return true;
 }
@@ -166,6 +167,7 @@ function tryGetNumber(context) {
 		pos:	pos0,
 		line:	line0,
 		col:	col0,
+		path:	context.path
 	});
 	return true;
 }
@@ -201,6 +203,7 @@ function tryGetString(context) {
 				pos:	pos0,
 				line:	line0,
 				col:	col0,
+				path:	context.path
 			});
 			return true;
 		} else if (ch === '\\') {
@@ -312,9 +315,10 @@ function skipComment(context) {
 	return false;
 }
 
-function tokenize(text) {
+function tokenize(text, path='<unknown>') {
 	const context = {
 		text:	text,
+		path:	path,
 		end:	text.length,
 		pos:	0,
 		line:	0,
@@ -492,6 +496,7 @@ function tokenize(text) {
 					pos:	pos0,
 					line:	line0,
 					col:	col0,
+					path:	path
 				})
 			}
 			continue;
@@ -512,7 +517,8 @@ function tokenize(text) {
 		line:	context.line,
 		col:	context.col,
 		lineStarts:	context.lineStarts,
-		text:	context.text,
+		text:	text,
+		path:	path
 	};
 }
 

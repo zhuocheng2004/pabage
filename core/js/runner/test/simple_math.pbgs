@@ -1,0 +1,33 @@
+
+ns test;
+
+import core.io.numberToString;
+import core.io.print;
+import core.math.cos;
+import core.math.sin;
+
+/*
+ * Demo Script TODO
+ */
+
+export fn main() {
+	// constant
+	val t = 1;
+
+	val c = cos(t);
+	val s = sin(t);
+
+	print('c=');
+	print(numberToString(c));
+	print('\n');
+	print('s=');
+	print(numberToString(s));
+	print('\n');
+
+	val result = c*c + s*s;
+	print('c*c + s*s = ');
+	print(numberToString(result));
+	print('\n');
+
+	return 0;
+}

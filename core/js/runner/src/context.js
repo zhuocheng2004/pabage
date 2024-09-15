@@ -95,13 +95,9 @@ export class DefNode {
 		return this.objs[name] !== undefined;
 	}
 
-	getRaw(name) {
-		return this.objs[name];
-	}
-
 	get(name) {
 		if (this.objs[name] !== undefined) {
-			return this.objs[name].get();
+			return resultValue(this.objs[name]);
 		} else {
 			return resultError(`cannot find '${name}'`);
 		}
@@ -129,16 +125,8 @@ export class DefNode {
 		}
 	}
 
-	setRaw(name, def) {
+	setDef(name, def) {
 		this.objs[name] = def;
-	}
-
-	set(name, value) {
-		if (this.objs[name] !== undefined) {
-			return this.objs[name].set(value);
-		} else {
-			return resultError(`cannot find '${name}'`);
-		}
 	}
 
 	getOrCreateSubNode(name) {
@@ -181,6 +169,15 @@ export class Frame {
 	constructor(def_node) {
 		this.def_node = def_node;
 		this.local_nodes = [];
+	}
+
+	get(name) {
+		const local_nodes = this.local_nodes;
+		for (let i = local_nodes.length - 1; i >= 0; i--) {
+			const node = local_nodes[i];
+			if (node.has(name)) return node.get(name);
+		}
+		return resultError(`cannot find '${name}' locally`);
 	}
 }
 
@@ -250,8 +247,7 @@ export class Context {
 		this.reset();
 
 		// find function/variable definitions
-		for (const ast of asts) {
-			const ast_node = ast.ast;
+		for (const ast_node of asts) {
 			if (ast_node.type !== NodeType.ROOT) {
 				return makeError('expected root AST node', ast_node.token);
 			}
@@ -259,10 +255,7 @@ export class Context {
 			def_node.global = this.global;
 			this.stack = [ [ def_node ] ];
 			const err = this.initDefs(def_node, ast_node.nodes, true);
-			if (err) {
-				err.path = ast.path;
-				return err;
-			}
+			if (err) return err;
 
 			this.envs.push(def_node);
 		}
@@ -293,7 +286,8 @@ export class Context {
 					this.toImport.push({
 						def_node:	def_node,
 						path:	ast_node.path,
-						name:	ast_node.name
+						name:	ast_node.name,
+						token:	ast_node.token
 					});
 					start_index++;
 				} else {
@@ -319,10 +313,12 @@ export class Context {
 					}
 
 					if (ast_node.export) {
-						if (def_node.global.getRaw(func_name)) {
+						if (def_node.global.has(func_name)) {
 							return makeError(`'${func_name}' is already exported in this scope`, ast_node.token);
 						}
-						def_node.global.setRaw(func_name, def_node.getRaw(func_name));
+						const result = def_node.get(func_name);
+						if (result.err) return result.err;
+						def_node.global.setDef(func_name, result.value);
 					}
 					break;
 				case NodeType.VAR_DEF:
@@ -340,7 +336,8 @@ export class Context {
 						result = def_node.addInit(var_name, ast_node.init, ast_node.constant);
 						this.toInit.push({
 							def_node:	def_node,
-							name:		var_name
+							name:		var_name,
+							token:		ast_node.token
 						});
 					} else {
 						result = def_node.add(var_name, { type: ObjectType.UNDEF }, ast_node.constant);
@@ -352,10 +349,12 @@ export class Context {
 					}
 
 					if (ast_node.export) {
-						if (def_node.global.getRaw(var_name)) {
+						if (def_node.global.has(var_name)) {
 							return makeError(`'${var_name}' is already exported in this scope`, ast_node.token);
 						}
-						def_node.global.setRaw(var_name, def_node.getRaw(var_name));
+						const result = def_node.get(var_name);
+						if (result.err) return result.err;
+						def_node.global.setDef(var_name, result.value);
 					}
 					break;
 				case NodeType.NS:
@@ -400,24 +399,18 @@ export class Context {
 		if (result.err) return result;
 		const frame = result.value;
 
-		const local_nodes = frame.local_nodes;
-		for (let i = local_nodes.length - 1; i >= 0; i--) {
-			const node = local_nodes[i];
-			result = node.get(name);
-			if (!result.err) return result;
-		}
+		result = frame.get(name);
+		if (!result.err) return result;
 
 		let node = frame.def_node;
 		while (node) {
-			result = node.get(name);
-			if (!result.err) return result;
+			if (node.has(name)) return node.get(name);
 			node = node.parent;
 		}
 
 		node = frame.def_node.global_node;
 		while (node) {
-			result = node.get(name);
-			if (!result.err) return result;
+			if (node.has(name)) return node.get(name);
 			node = node.parent;
 		}
 

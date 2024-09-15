@@ -15,11 +15,11 @@ function resultError(msg, token = undefined) {
 	return { err: makeError(msg, token) };
 }
 
-function addTokenIfNot(result, token) {
-	if (result.err && !result.err.token) {
-		result.err.token = token;
+function addTokenIfNot(err, token) {
+	if (err && !err.token) {
+		err.token = token;
 	}
-	return result;
+	return err;
 }
 
 export {

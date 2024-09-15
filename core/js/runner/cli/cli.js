@@ -54,7 +54,7 @@ async function main(args) {
 				console.error('invalid paths');
 				return 1;
 			}
-			pbgs_paths.push(...paths);
+			pbgs_paths.push(...(paths.map(p => path.resolve(p))));
 			i += 2;
 		} else if (arg === '-js') {
 			if (i === args.length - 1) {
@@ -94,8 +94,8 @@ async function main(args) {
 
 	let sources;
 	try {
-		sources = await Promise.all(pbgs_paths.map(path => mapPromiseResult(fs.readFile(path, { encoding: 'utf8' }), text => new Object({
-			path:	path,
+		sources = await Promise.all(pbgs_paths.map(p => mapPromiseResult(fs.readFile(p, { encoding: 'utf8' }), text => new Object({
+			path:	p,
 			text:	text
 		}))));
 	} catch (err) {
@@ -103,10 +103,13 @@ async function main(args) {
 		return 1;
 	}
 
+	const tokenInfos = {};
+
 	// parse
 	const asts = [];
-	for (const source of sources) {
-		const tokenizeResult = tokenize(source.text);
+	for (let i = 0; i < pbgs_paths.length; i++) {
+		const source = sources[i], p = pbgs_paths[i];
+		const tokenizeResult = tokenize(source.text, p);
 		if (tokenizeResult.err) {
 			console.error(`Syntax Error in ${source.path} @ Line ${tokenizeResult.line+1}, Col ${tokenizeResult.col+1}: ${tokenizeResult.err}`);
 			printErrorContext(source.text, tokenizeResult.lineStarts[tokenizeResult.line], tokenizeResult.col);
@@ -133,16 +136,31 @@ async function main(args) {
 			return 1;
 		}
 
-		asts.push({
-			path:	source.path,
-			ast:	ast
-		});
+		tokenInfos[p] = {
+			text:	source.text,
+			lineStarts:	tokenizeResult.lineStarts
+		};
+
+		asts.push(ast);
+	}
+
+	function printError(err, msg_head = 'Error') {
+		const token = err.token;
+		if (token) {
+			console.error(`${msg_head} in ${token.path} @ Line ${token.line+1}, Col ${token.col+1}: ${err.msg}`);
+			if (tokenInfos[token.path]) {
+				const tokenInfo = tokenInfos[token.path];
+				printErrorContext(tokenInfo.text,tokenInfo.lineStarts[token.line], token.col);
+			}
+		} else {
+			console.error(`${msg_head}: ${err.msg}`);
+		}
 	}
 
 	const context = new Context();
 	let err = context.setup(asts);
 	if (err) {
-		console.error(`Runtime Setup Error in ${err.path ? err.path : '<unknown>'}: ${err.msg}`);
+		printError(err, 'Runtime Setup Error');
 		return 1;
 	}
 
@@ -153,11 +171,12 @@ async function main(args) {
 	}
 
 	// do native init
-	for (const js_module of js_modules) {
+	for (let i = 0; i < js_paths.length; i++) {
+		const js_module = js_modules[i];
 		if (js_module.init) {
 			err = js_module.init(context);
 			if (err) {
-				console.error(`Error initializing module ${js_module}: ${err.msg}`);
+				console.error(`Error initializing module '${js_module.info ? js_module.info.name : '<unknown>'}' (${js_paths[i]}): ${err.msg}`);
 				return 1;
 			}
 		}
@@ -166,6 +185,12 @@ async function main(args) {
 	let result = context.findObjAtPath(context.global, entry_name, entry_path);
 	if (result.err) {
 		console.error(`Error finding entry: ${result.err.msg}`);
+		return 1;
+	}
+	const def = result.value;
+	result = def.get();
+	if (result.err) {
+		console.error(`Error getting entry: ${result.err.msg}`);
 		return 1;
 	}
 
@@ -177,14 +202,14 @@ async function main(args) {
 
 	err = setupRuntime(context);
 	if (err) {
-		console.error(`Runtime Init Error: ${err.msg}`);
+		printError(err, 'Runtime Init Error');
 		return 1;
 	}
 
 	context.stack = [ new Frame(entry_func.def_node) ];
 	result = func_call(context, entry_func, []);
 	if (result.err) {
-		console.error(`Runtime Error: ${result.err.msg}`);
+		printError(result.err, 'Runtime Error');
 		return 1;
 	}
 

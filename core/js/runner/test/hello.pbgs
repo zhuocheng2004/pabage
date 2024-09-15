@@ -3,13 +3,15 @@ ns test;
 import core.io.print;
 
 
-val hello_msg = "Hello, World!\n";
+val hello_msg = 'Hello, World!\n';
 
 fn sayHello() {
 	print(hello_msg);
 }
 
 export fn main() {
+	val head = 'Runtime: ';
+	print(head);
 	sayHello();
 	return 0;
 }
