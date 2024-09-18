@@ -3,9 +3,8 @@ import { TokenType, tokenize } from '../src/tokenizer.js'
 
 
 test('empty strings have no tokens', () => {
-	const result = tokenize('');
-	expect(result.err).toBeUndefined();
-	expect(result.tokens).toEqual([]);
+	const tokens = tokenize('');
+	expect(tokens).toEqual([]);
 });
 
 test('strings with only spaces/tabs/newlines have no tokens', () => {
@@ -16,9 +15,8 @@ test('strings with only spaces/tabs/newlines have no tokens', () => {
 	];
 
 	for (const text of texts) {
-		const result = tokenize(text);
-		expect(result.err).toBeUndefined();
-		expect(result.tokens).toEqual([]);
+		const tokens = tokenize(text);
+		expect(tokens).toEqual([]);
 	}
 });
 
@@ -30,9 +28,8 @@ test('block/line comments have no tokens', () => {
 	];
 
 	for (const text of texts) {
-		const result = tokenize(text);
-		expect(result.err).toBeUndefined();
-		expect(result.tokens).toEqual([]);
+		const tokens = tokenize(text);
+		expect(tokens).toEqual([]);
 	}
 });
 
@@ -49,12 +46,11 @@ test('identifier', () => {
 
 	for (const sample of samples) {
 		expect(sample[2].length).toBe(sample[1]);
-		const result = tokenize(sample[0]);
-		expect(result.err).toBeUndefined();
-		const n = result.tokens.length;
+		const tokens = tokenize(sample[0]);
+		const n = tokens.length;
 		expect(n).toBe(sample[1]);
 		for (let i = 0; i < n; i++) {
-			const token = result.tokens[i];
+			const token = tokens[i];
 			expect(token.type).toBe(TokenType.IDENTIFIER);
 			expect(token.data).toBe(sample[2][i]);
 		}
@@ -70,12 +66,11 @@ test('number', () => {
 
 	for (const sample of samples) {
 		expect(sample[2].length).toBe(sample[1]);
-		const result = tokenize(sample[0]);
-		expect(result.err).toBeUndefined();
-		const n = result.tokens.length;
+		const tokens = tokenize(sample[0]);
+		const n = tokens.length;
 		expect(n).toBe(sample[1]);
 		for (let i = 0; i < n; i++) {
-			const token = result.tokens[i];
+			const token = tokens[i];
 			expect(token.type).toBe(TokenType.NUMBER);
 			expect(token.data).toBe(sample[2][i]);
 		}
@@ -92,12 +87,11 @@ test('string', () => {
 
 	for (const sample of samples) {
 		expect(sample[2].length).toBe(sample[1]);
-		const result = tokenize(sample[0]);
-		expect(result.err).toBeUndefined();
-		const n = result.tokens.length;
+		const tokens = tokenize(sample[0]);
+		const n = tokens.length;
 		expect(n).toBe(sample[1]);
 		for (let i = 0; i < n; i++) {
-			const token = result.tokens[i];
+			const token = tokens[i];
 			expect(token.type).toBe(TokenType.STRING);
 			expect(token.data).toBe(sample[2][i]);
 		}
@@ -105,9 +99,7 @@ test('string', () => {
 });
 
 test('dot', () => {
-	const result = tokenize('a.b + 1.2');
-	expect(result.err).toBeUndefined();
-	const tokens = result.tokens;
+	const tokens = tokenize('a.b + 1.2');
 	expect(tokens.length).toBe(5);
 	expect(tokens[0].type).toBe(TokenType.IDENTIFIER);
 	expect(tokens[0].data).toBe('a');
@@ -168,12 +160,11 @@ test('misc', () => {
 	];
 
 	for (const sample of samples) {
-		const result = tokenize(sample.text);
-		expect(result.err).toBeUndefined();
-		const n = result.tokens.length;
+		const tokens = tokenize(sample.text);
+		const n = tokens.length;
 		expect(n).toBe(sample.tokens.length);
 		for (let i = 0; i < n; i++) {
-			const token = result.tokens[i];
+			const token = tokens[i];
 			const expected = sample.tokens[i];
 			expect(token.type).toBe(expected.type);
 			if (expected.data) {

@@ -165,7 +165,7 @@ function _parseLevel(context, level) {
 		return parsePrimitive(context);
 	}
 
-	// 1: grouo operators
+	// 1: group operators
 	if (operators.group) {
 		const node = parseGroup(context, level);
 		if (node) {

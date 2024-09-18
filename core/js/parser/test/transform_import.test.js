@@ -26,10 +26,7 @@ test('global', () => {
 	];
 
 	for (const sample of samples) {
-		const tokenizeResult = tokenize(sample.text);
-		expect(tokenizeResult.err).toBeUndefined();
-
-		const parseResult = parse(tokenizeResult.tokens, operators);
+		const parseResult = parse(tokenize(sample.text), operators);
 		expect(parseResult.err).toBeUndefined();
 
 		const ast = parseResult.ast;
@@ -67,10 +64,7 @@ test('local', () => {
 	];
 
 	for (const sample of samples) {
-		const tokenizeResult = tokenize(sample.text);
-		expect(tokenizeResult.err).toBeUndefined();
-
-		const parseResult = parse(tokenizeResult.tokens, operators);
+		const parseResult = parse(tokenize(sample.text), operators);
 		expect(parseResult.err).toBeUndefined();
 
 		const ast = parseResult.ast;

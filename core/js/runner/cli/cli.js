@@ -19,7 +19,7 @@ function parsePaths(paths_str) {
 	return paths;
 }
 
-function printErrorContext(source, lineStart, col) {
+function printErrorContext(source, pos) {
 	let s = '';
 	for (let i = 0; i < col; i++) {
 		const ch = source[lineStart + i];
@@ -107,16 +107,14 @@ async function main(args) {
 
 	// parse
 	const asts = [];
-	for (let i = 0; i < pbgs_paths.length; i++) {
-		const source = sources[i], p = pbgs_paths[i];
-		const tokenizeResult = tokenize(source.text, p);
-		if (tokenizeResult.err) {
-			console.error(`Syntax Error in ${source.path} @ Line ${tokenizeResult.line+1}, Col ${tokenizeResult.col+1}: ${tokenizeResult.err}`);
-			printErrorContext(source.text, tokenizeResult.lineStarts[tokenizeResult.line], tokenizeResult.col);
+	for (const source of sources) {
+		try {
+			const tokens = tokenize(source.text, source.path);
+		} catch (e) {
+			console.error(`Tokenize Error in ${e.path} @ Line ${e.line+1}, Col ${e.col+1}: ${e.message}`);
+			printErrorContext(source.text, e.pos);
 			return 1;
 		}
-
-		const tokens = tokenizeResult.tokens;
 
 		const parseResult = parse(tokens, operators);
 		if (parseResult.err) {

@@ -54,6 +54,34 @@ const TokenType = {
 }
 
 
+class TokenizeError extends Error {
+	constructor(message, path, pos) {
+		super(message);
+		this.path = path;
+		this.pos = pos;
+	}
+}
+
+class Token {
+	constructor(type, pos, path, data = undefined) {
+		this.type = type;
+		this.pos = pos;
+		this.path = path;
+		if (data !== undefined) this.data = data;
+	}
+}
+
+class TokenizeContext {
+	constructor(path, text) {
+		this.path = path;
+		this.text = text;
+		this.end = text.length;
+		this.pos = 0;
+		this.tokens = [];
+	}
+}
+
+
 function isLatinOrUnderscore(ch) {
 	return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch === '_';
 }
@@ -76,7 +104,7 @@ function tryGetIdentifier(context) {
 		return false;
 	}
 
-	const pos0 = context.pos, line0 = context.line, col0 = context.col;
+	const pos0 = context.pos;
 
 	let name = ch0;
 	pos++;
@@ -95,16 +123,8 @@ function tryGetIdentifier(context) {
 		}
 	}
 
-	context.col += (pos - context.pos);
 	context.pos = pos;
-	context.tokens.push({
-		type:	TokenType.IDENTIFIER,
-		data:	name,
-		pos:	pos0,
-		line:	line0,
-		col:	col0,
-		path:	context.path
-	});
+	context.tokens.push(new Token(TokenType.IDENTIFIER, pos0, context.path, name));
 	return true;
 }
 
@@ -116,7 +136,7 @@ function tryGetNumber(context) {
 		return false;
 	}
 
-	const pos0 = context.pos, line0 = context.line, col0 = context.col;
+	const pos0 = context.pos;
 
 	let decimalDigits, value;
 	if (ch0 === '.') {
@@ -159,16 +179,8 @@ function tryGetNumber(context) {
 		value = value / Math.pow(10, decimalDigits);
 	}
 
-	context.col += (pos - context.pos);
 	context.pos = pos;
-	context.tokens.push({
-		type:	TokenType.NUMBER,
-		data:	value,
-		pos:	pos0,
-		line:	line0,
-		col:	col0,
-		path:	context.path
-	});
+	context.tokens.push(new Token(TokenType.NUMBER, pos0, context.path, value));
 	return true;
 }
 
@@ -181,36 +193,26 @@ function tryGetString(context) {
 		return false;
 	}
 
-	const pos0 = context.pos, line0 = context.line, col0 = context.col;
+	const pos0 = context.pos;
 
 	let str = '';
 	pos++;
 
 	while (true) {
 		if (pos >= end) {
-			context.err = 'non-closed string: unexpected eof';
-			break;
+			throw new TokenizeError('non-closed string: unexpected eof', context.path, context.pos);
 		}
 
 		const ch = text[pos];
 		if (ch === ch0) {
 			pos++;
-			context.col += (pos - context.pos);
 			context.pos = pos;
-			context.tokens.push({
-				type:	TokenType.STRING,
-				data:	str,
-				pos:	pos0,
-				line:	line0,
-				col:	col0,
-				path:	context.path
-			});
+			context.tokens.push(new Token(TokenType.STRING, pos0, context.path, str));
 			return true;
 		} else if (ch === '\\') {
 			pos++;
 			if (pos >= end) {
-				context.err = 'unexpected eof';
-				break;
+				throw new TokenizeError('unexpected eof', context.path, context.pos);
 			} else {
 				const ch1 = text[pos];
 				switch (ch1) {
@@ -243,68 +245,46 @@ function tryGetString(context) {
 						str += '\\';
 						break;
 					default:
-						context.err = 'unexpected escape in string';
-						break;
+						throw new TokenizeError('unexpected escape in string', context.path, context.pos);
 				}
-			}
-
-			if (context.err) {
-				break;
 			}
 		} else {
 			str += ch;
 			pos++;
 		}
 	}
-
-	return false;
 }
 
 function skipComment(context) {
 	const text = context.text, end = context.end;
-	let pos = context.pos, line = context.line, col = context.col;
+	let pos = context.pos;
 	const ch0 = text[pos];
 	const ch1 = pos <= end - 2 ? text[pos+1] : undefined;
 
 	if (ch0 === '/' && ch1 === '*') {
 		pos += 2;
-		col += 2;
 		while (true) {
 			if (pos >= end) {
-				context.err = 'non-closed comment: unexpected eof'
-				break;
-			}
-
-			if (text[pos] === '\n') {
-				context.lineStarts.push(pos+1);
-				line++;
-				col = 0;
+				throw new TokenizeError('non-closed comment: unexpected eof', context.path, context.pos);
 			}
 
 			if (pos <= end - 2 && text[pos] === '*' && text[pos+1] === '/') {
-				context.line = line;
 				context.pos = pos + 2;
-				context.col = col + 2;
 				return true;
 			}
 
 			pos++;
-			col++;
 		}
 	} else if (ch0 === '/' && ch1 === '/') {
 		pos += 2;
 		while (true) {
 			if (pos >= end) {
-				context.col += (pos - context.pos);
 				context.pos = pos;
 				return true;
 			}
 
 			if (text[pos] === '\n') {
 				context.pos = pos + 1;
-				context.lineStarts.push(pos + 1);
-				context.line++;
-				context.col = 0;
 				return true;
 			}
 
@@ -316,19 +296,7 @@ function skipComment(context) {
 }
 
 function tokenize(text, path='<unknown>') {
-	const context = {
-		text:	text,
-		path:	path,
-		end:	text.length,
-		pos:	0,
-		line:	0,
-		col:	0,
-		tokens:	[],
-		lineStarts:	[],
-		err:	undefined,
-	}
-
-	context.lineStarts.push(0);
+	const context = new TokenizeContext(path, text);
 
 	while (true) {
 		const text = context.text, end = context.end;
@@ -349,68 +317,57 @@ function tokenize(text, path='<unknown>') {
 		let tokenType = undefined;
 		let failed = false;
 
-		const pos0 = context.pos, line0 = context.line, col0 = context.col;
+		const pos0 = context.pos;
 	
 		const ch0 = text[pos0];
 		const ch1 = pos0 <= end - 2 ? text[pos0+1] : undefined;
 		switch (ch0) {
 			// skip empty tokens
 			case '\n':
-				context.pos++;
-				context.line++;
-				context.col = 0;
-				context.lineStarts.push(context.pos);
-				tokenType = TokenType.EMPTY;
-				break;
 			case '\r':
-				context.pos++;
-				context.col = 0;
-				tokenType = TokenType.EMPTY;
-				break;
 			case '\t':
 			case ' ':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.EMPTY;
 				break;
-
 			case '(':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.LPAREN;
 				break;
 			case ')':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.RPAREN;
 				break;
 			case '[':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.LBRACKET;
 				break;
 			case ']':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.RBRACKET;
 				break;
 			case '{':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.LBRACE;
 				break;
 			case '}':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.RBRACE;
 				break;
 			case '@':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.AT;
 				break;
 			case '+':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.PLUS;
 				break;
 			case '-':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.MINUS;
 				break;
 			case '*':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.STAR;
 				break;
 			case '/':
@@ -422,60 +379,60 @@ function tokenize(text, path='<unknown>') {
 						break;
 					}
 				} else {
-					context.pos++; context.col++;
+					context.pos++;
 					tokenType = TokenType.SLASH;
 				}
 				break;
 			case '%':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.PERCENT;
 				break;
 			case ',':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.COMMA;
 				break;
 			case '.':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.DOT;
 				break;
 			case ':':
 				if (ch1 === ':') {
-					context.pos += 2; context.col += 2;
+					context.pos += 2;
 					tokenType = TokenType.DCOLON;
 				} else {
-					context.pos ++; context.col++;
+					context.pos++;
 					tokenType = TokenType.COLON;
 				}
 				break;
 			case ';':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.SEMICOLON;
 				break;
 			case '&':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.AMP;
 				break;
 			case '|':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.VERT;
 				break;
 			case '^':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.HAT;
 				break;
 			case '#':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.HASH;
 				break;
 			case '$':
-				context.pos++; context.col++;
+				context.pos++;
 				tokenType = TokenType.DOLLAR;
 				break;
 			case '=':
-				context.pos++; context.col++;
+				context.pos++;
 				switch (ch1) {
 					case '=':
-						context.pos++; context.col++;
+						context.pos++;
 						tokenType = TokenType.EQUAL;
 						break;
 					default:
@@ -491,35 +448,15 @@ function tokenize(text, path='<unknown>') {
 
 		if (tokenType) {
 			if (tokenType != TokenType.EMPTY) {
-				context.tokens.push({
-					type:	tokenType,
-					pos:	pos0,
-					line:	line0,
-					col:	col0,
-					path:	path
-				})
+				context.tokens.push(new Token(tokenType, pos0, path));
 			}
 			continue;
 		}
 
-		if (!context.err) {
-			context.err = 'unrecognized token';
-		}
-
-		break;
-
+		throw new TokenizeError('unrecognized token', context.path, context.pos);
 	}
 
-	return {
-		tokens: context.tokens,
-		err:	context.err,
-		pos:	context.pos,
-		line:	context.line,
-		col:	context.col,
-		lineStarts:	context.lineStarts,
-		text:	text,
-		path:	path
-	};
+	return context.tokens;
 }
 
 export {
