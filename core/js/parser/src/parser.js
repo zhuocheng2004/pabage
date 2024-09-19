@@ -13,10 +13,26 @@ const ASTNodeType = {
 };
 
 
+class ParseError extends Error {
+	constructor(message, pos) {
+		super(message);
+		this.pos = pos;
+	}
+}
+
+class ParseContext {
+	constructor(tokens, operators) {
+		this.tokens = tokens;
+		this.operators = operators;
+		this.end = tokens.length;
+		this.pos = 0;
+	}
+}
+
+
 function parsePrimitive(context) {
 	if (context.pos >= context.end) {
-		context.err = 'eof';
-		return undefined;
+		throw new ParseError('unexpected eof', context.pos);
 	}
 
 	const token = context.tokens[context.pos];
@@ -29,8 +45,7 @@ function parsePrimitive(context) {
 		}
 	}
 
-	context.err = 'expected an identifier, a number or a string';
-	return undefined;
+	throw new ParseError('expected an identifier, a number or a string', context.pos);
 }
 
 /*
@@ -38,8 +53,7 @@ function parsePrimitive(context) {
  */
 function parseGroup(context, level) {
 	if (context.pos >= context.end) {
-		context.err = 'eof';
-		return undefined;
+		throw new ParseError('unexpected eof', context.pos);
 	}
 
 	const operators = context.operators[level];
@@ -66,8 +80,7 @@ function parseGroup(context, level) {
 			let index = 0;
 			while (true) {
 				if (context.pos >= context.end) {
-					context.err = 'eof';
-					return undefined;
+					throw new ParseError('unexpected eof', context.pos);
 				}
 
 				const token0 = context.tokens[context.pos];
@@ -144,8 +157,7 @@ function binaryOpAppendReOrder(node1, node2, token, operators) {
 
 function _parseLevel(context, level) {
 	if (context.pos >= context.end) {
-		context.err = 'eof';
-		return undefined;
+		return;
 	}
 
 	const token = context.tokens[context.pos];
@@ -290,7 +302,6 @@ function parseRoot(context) {
 			nodes.push(node);
 			index++;
 		} else if (context.pos >= context.end) {
-			context.err = undefined;
 			break;
 		} else {
 			return undefined;
@@ -301,21 +312,11 @@ function parseRoot(context) {
 }
 
 function parse(tokens, operators) {
-	const context = {
-		tokens:	tokens,
-		end:	tokens.length,
-		operators:	operators,
-		pos:	0,
-		err:	undefined,
-	};
+	const context = new ParseContext(tokens, operators);
 
 	const ast = parseRoot(context);
 
-	return {
-		ast:	ast,
-		err:	context.err,
-		pos:	context.pos,
-	};
+	return ast;
 }
 
 export {

@@ -103,29 +103,27 @@ async function main(args) {
 		return 1;
 	}
 
-	const tokenInfos = {};
 
 	// parse
 	const asts = [];
 	for (const source of sources) {
+		let tokens;
 		try {
-			const tokens = tokenize(source.text, source.path);
+			tokens = tokenize(source.text, source.path);
 		} catch (e) {
 			console.error(`Tokenize Error in ${e.path} @ Line ${e.line+1}, Col ${e.col+1}: ${e.message}`);
-			printErrorContext(source.text, e.pos);
 			return 1;
 		}
 
-		const parseResult = parse(tokens, operators);
-		if (parseResult.err) {
-			const tokenPos = parseResult.pos;
-			const token = tokens[tokenPos];
-			console.error(`Syntax Error in ${source.path} @ Line ${token.line+1}, Col ${token.col+1}: ${parseResult.err}`);
-			printErrorContext(source.text, tokenizeResult.lineStarts[token.line], token.col);
+		let ast;
+		try {
+			ast = parse(tokens, operators);
+		} catch (e) {
+			const token = tokens[e.pos];
+			console.error(`Parse Error in ${token.path} @ pos ${token.pos}`);
 			return 1;
 		}
 
-		const ast = parseResult.ast;
 		const err = transform(ast, standard_passes);
 		if (err) {
 			const token = err.token;
@@ -134,25 +132,11 @@ async function main(args) {
 			return 1;
 		}
 
-		tokenInfos[p] = {
-			text:	source.text,
-			lineStarts:	tokenizeResult.lineStarts
-		};
-
 		asts.push(ast);
 	}
 
 	function printError(err, msg_head = 'Error') {
-		const token = err.token;
-		if (token) {
-			console.error(`${msg_head} in ${token.path} @ Line ${token.line+1}, Col ${token.col+1}: ${err.msg}`);
-			if (tokenInfos[token.path]) {
-				const tokenInfo = tokenInfos[token.path];
-				printErrorContext(tokenInfo.text,tokenInfo.lineStarts[token.line], token.col);
-			}
-		} else {
-			console.error(`${msg_head}: ${err.msg}`);
-		}
+		console.error(`${msg_head}: ${err.msg}`);
 	}
 
 	const context = new Context();

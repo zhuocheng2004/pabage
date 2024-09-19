@@ -47,10 +47,7 @@ test('variable', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-
-		const ast = parseResult.ast;
+		const ast = parse(tokenize(sample.text), operators);
 		const err = transform(ast, [ pass_variable_definition, pass_export ]);
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);
@@ -79,10 +76,7 @@ test('function', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-
-		const ast = parseResult.ast;
+		const ast = parse(tokenize(sample.text), operators);
 		const err = transform(ast, [ pass_function_definition, pass_export ]);
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);

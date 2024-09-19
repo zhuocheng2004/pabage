@@ -32,10 +32,7 @@ test('simple', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-
-		const ast = parseResult.ast;
+		const ast = parse(tokenize(sample.text), operators);
 		const err = transform(ast, [ pass_primitive ]);
 		expect(err).toBeUndefined();
 		expect(ast.nodes[0]).toEqual(sample.node);
@@ -103,10 +100,7 @@ test('in expression', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-
-		const ast = parseResult.ast;
+		const ast = parse(tokenize(sample.text), operators);
 		const err = transform(ast, [ pass_primitive ]);
 		expect(err).toBeUndefined();
 		expect(ast.nodes[0]).toEqual(sample.node);

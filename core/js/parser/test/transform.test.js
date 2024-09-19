@@ -52,10 +52,7 @@ test('simple', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-
-		const ast = parseResult.ast;
+		const ast = parse(tokenize(sample.text), operators);
 		const err = transform(ast, standard_passes);
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);
@@ -231,10 +228,7 @@ test('complicated', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-
-		const ast = parseResult.ast;
+		const ast = parse(tokenize(sample.text), operators);
 		const err = transform(ast, standard_passes);
 		expect(err).toBeUndefined();
 		expect(ast).toEqual(sample.ast);

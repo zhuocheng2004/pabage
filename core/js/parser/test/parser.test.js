@@ -12,9 +12,8 @@ test('strings with no tokens', () => {
 	];
 
 	for (const text of texts) {
-		const parseResult = parse(tokenize(text), operators);
-		expect(parseResult.err).toBeUndefined();
-		expect(parseResult.ast).toEqual(expect.objectContaining({
+		const ast = parse(tokenize(text), operators);
+		expect(ast).toEqual(expect.objectContaining({
 			type:	ASTNodeType.ROOT,
 			nodes:	[],
 		}));
@@ -148,9 +147,8 @@ test('arithmetic expressions', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-		expect(parseResult.ast).toEqual(sample.ast);
+		const ast = parse(tokenize(sample.text), operators);
+		expect(ast).toEqual(sample.ast);
 	}
 });
 
@@ -331,8 +329,7 @@ test('code segments', () => {
 	];
 
 	for (const sample of samples) {
-		const parseResult = parse(tokenize(sample.text), operators);
-		expect(parseResult.err).toBeUndefined();
-		expect(parseResult.ast).toEqual(sample.ast);
+		const ast = parse(tokenize(sample.text), operators);
+		expect(ast).toEqual(sample.ast);
 	}
 });
