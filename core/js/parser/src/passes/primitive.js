@@ -2,7 +2,6 @@
 import { TokenType } from '../tokenizer.js';
 import { ASTNodeType } from '../parser.js';
 import { NodeType, traverseAST } from '../transformer.js';
-import { makeError } from '../util.js';
 
 
 /*
@@ -13,7 +12,7 @@ function pass_primitive(context, ast) {
 	context.childrenTraversalMethods[NodeType.LIT_NUMBER] = (_context, _node, _func, _preorder) => { };
 	context.childrenTraversalMethods[NodeType.LIT_STRING] = (_context, _node, _func, _preorder) => { };
 
-	const err = traverseAST(context, ast, (_context, node) => {
+	traverseAST(context, ast, (_context, node) => {
 		if (node.type !== ASTNodeType.PRIMITIVE) return;
 
 		const token = node.token;
@@ -31,11 +30,9 @@ function pass_primitive(context, ast) {
 				node.value = token.data;
 				break;
 			default:
-				return makeError('unrecognized primitive', token);
+				throw new TransformError('unrecognized primitive', token);
 		}
 	});
-
-	if (err) context.err = err;
 }
 
 export default pass_primitive;

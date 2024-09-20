@@ -73,8 +73,7 @@ test('simple', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_function_call ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_function_call ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });

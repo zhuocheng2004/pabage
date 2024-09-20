@@ -48,8 +48,7 @@ test('variable', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_variable_definition, pass_export ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_variable_definition, pass_export ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });
@@ -77,8 +76,7 @@ test('function', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_function_definition, pass_export ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_function_definition, pass_export ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });

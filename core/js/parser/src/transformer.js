@@ -1,7 +1,7 @@
 
 import { TokenType } from './tokenizer.js';
 import { ASTNodeType } from './parser.js';
-import { makeError } from './util.js';
+import { err_msg_internal_error } from './error_messages.js';
 
 
 const NodeType = {
@@ -32,10 +32,23 @@ const OperatorType = {
 };
 
 
+class TransformContext {
+	constructor() {
+		this.childrenTraversalMethods = {};
+	}
+}
+
+class TransformError extends Error {
+	constructor(message, token) {
+		super(message);
+		if (token) this.token = token;
+	}
+}
+
+
 function traverseNodes (context, nodes, func, preorder) {
 	for (const child of nodes) {
-		const err = traverseAST(context, child, func, preorder);
-		if (err) return err;
+		traverseAST(context, child, func, preorder);
 	}
 }
 
@@ -53,49 +66,35 @@ function initChildrenTraversalMethods(context) {
 	methods[ASTNodeType.OP_PREFIX] = (context, node, func, preorder) => traverseAST(context, node.node, func, preorder);
 
 	methods[ASTNodeType.OP_BINARY] = (context, node, func, preorder) => {
-		const err = traverseAST(context, node.node1, func, preorder);
-		if (err) return err;
-		return traverseAST(context, node.node2, func, preorder);
+		traverseAST(context, node.node1, func, preorder);
+		traverseAST(context, node.node2, func, preorder);
 	};
 }
 
 function traverseAST(context, node, func, preorder = false) {
 	const method = context.childrenTraversalMethods[node.type];
 	if (method) {
-		let err;
 		if (preorder) {
-			err = func(context, node);
-			if (err) return err;
+			func(context, node);
 		}
-		err = method(context, node, func, preorder);
-		if (err) return err;
+		method(context, node, func, preorder);
 		if (!preorder) {
-			err = func(context, node);
-			if (err) return err;
+			func(context, node);
 		}
 	} else {
-		return makeError(`don't know how to traverse node type ${node.type}`, node.token);
+		throw new TransformError(`don't know how to traverse node type ${node.type}`, node.token);
 	}
 }
 
 function transform(ast, passes) {
-	const context = {
-		err:	undefined,
-		childrenTraversalMethods:	{},
-	};
+	const context = new TransformContext();
 
 	initChildrenTraversalMethods(context);
 
 	for (const pass of passes) {
 		pass(context, ast);
-		if (context.err) break;
 	}
-
-	return context.err;
 }
-
-const err_msg_internal_error = 'compiler internal error';
-const err_msg_no_parent = 'non-root node has no parent';
 
 
 /* Helper Functions */
@@ -111,28 +110,26 @@ function get_ns_path(node) {
 	const token = node.token;
 	if (node.type === ASTNodeType.PRIMITIVE) {
 		if (token.type === TokenType.IDENTIFIER) {
-			return { value: [ token.data ] };
+			return [ token.data ];
 		} else {
-			return { err: makeError('expected identifier', token) };
+			throw new TransformError('expected identifier', token);
 		}
 	}
 
 	if (!(node.type === ASTNodeType.OP_BINARY && token.type === TokenType.DOT)) {
-		return { err: makeError('expected dot \'.\'', token) };
+		throw new TransformError('expected dot \'.\'', token);
 	}
 
 	const node1 = node.node1, node2 = node.node2;
 	if (!(node2.type === ASTNodeType.PRIMITIVE && node2.token.type === TokenType.IDENTIFIER)) {
-		return { err: makeError('expected identifier', node2.token) };
+		throw new TransformError('expected identifier', node2.token);
 	}
 	const name = node2.token.data;
 
-	const result = get_ns_path(node1);
-	if (result.err) return err;
-	const path = result.value;
+	const path = get_ns_path(node1);
 	path.push(name);
 
-	return { value: path };
+	return path;
 }
 
 /*
@@ -141,7 +138,7 @@ function get_ns_path(node) {
  */
 function spliceNodes(nodes, delimiters, index, deleteCount, addedItem) {
 	if (deleteCount <= 0 || index + deleteCount > nodes.length) {
-		return makeError(err_msg_internal_error, nodes[index]);
+		throw new TransformError(err_msg_internal_error, nodes[index].token);
 	}
 
 	nodes.splice(index, deleteCount, addedItem);
@@ -159,7 +156,7 @@ function spliceNodes(nodes, delimiters, index, deleteCount, addedItem) {
 
 function deleteNodes(nodes, delimiters, index, deleteCount) {
 	if (deleteCount < 0 || index + deleteCount > nodes.length) {
-		return makeError(err_msg_internal_error, nodes[index]);
+		throw new TransformError(err_msg_internal_error, nodes[index].token);
 	}
 
 	nodes.splice(index, deleteCount);
@@ -177,10 +174,10 @@ function deleteNodes(nodes, delimiters, index, deleteCount) {
 
 export {
 	NodeType, OperatorType,
+	TransformError,
 	traverseAST, traverseNodes,
 	transform,
 
-	err_msg_internal_error, err_msg_no_parent,
 	isIdentifier,
 	get_ns_path,
 	spliceNodes, deleteNodes

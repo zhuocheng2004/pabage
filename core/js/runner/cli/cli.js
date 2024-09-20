@@ -124,11 +124,15 @@ async function main(args) {
 			return 1;
 		}
 
-		const err = transform(ast, standard_passes);
-		if (err) {
-			const token = err.token;
-			console.error(`Syntax Error in ${source.path} @ Line ${token.line+1}, Col ${token.col+1}: ${err.msg}`);
-			printErrorContext(source.text, tokenizeResult.lineStarts[token.line], token.col);
+		try {
+			transform(ast, standard_passes);
+		} catch (e) {
+			if (e.token) {
+				const token = e.token;
+				console.error(`Syntax Error in ${token.path} @ pos ${token.pos}: ${e.message}`);
+			} else {
+				console.error(`Syntax Error: ${e.message}`)
+			}
 			return 1;
 		}
 

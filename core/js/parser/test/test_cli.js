@@ -2,6 +2,8 @@
 import operators from "../src/operators.js";
 import { parse } from "../src/parser.js";
 import { tokenize } from "../src/tokenizer.js";
+import { transform } from "../src/transformer.js";
+import { standard_passes } from "../src/passes/passes.js";
 
 
 function main(text) {
@@ -17,11 +19,25 @@ function main(text) {
     try {
         ast = parse(tokens, operators);
     } catch (e) {
-        console.error(`Parse Error @ token[${e.pos}]: ${e.message}`);
+        const token = tokens[e.pos];
+        console.error(`Parse Error in ${token.path} @ ${token.pos}: ${e.message}`);
         return 1;
     }
 
-    console.log(ast);
+    try {
+        transform(ast, standard_passes);
+    } catch (e) {
+        if (e.token) {
+            const token = e.token;
+            console.error(`Syntax Error in ${token.path} @ pos ${token.pos}: ${e.message}`);
+        } else {
+            console.error(`Syntax Error: ${e.message}`)
+        }
+        return 1;
+    }
+
+    console.log('AST Nodes:');
+    console.log(ast.nodes);
 }
 
 if (process.argv.length > 2) {

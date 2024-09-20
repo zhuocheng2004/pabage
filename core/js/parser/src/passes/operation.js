@@ -1,28 +1,26 @@
 
 import { TokenType } from '../tokenizer.js';
 import { ASTNodeType } from '../parser.js';
-import { NodeType, OperatorType, traverseAST } from '../transformer.js';
-import { makeError } from '../util.js';
+import { NodeType, TransformError, OperatorType, traverseAST } from '../transformer.js';
 
 
 function pass_operation(context, ast) {
 	context.childrenTraversalMethods[NodeType.EXPR_UNARY] = (context, node, func, preorder) => 
 		traverseAST(context, node.arg, func, preorder);
 	context.childrenTraversalMethods[NodeType.EXPR_BINARY] = (context, node, func, preorder) => {
-		const err = traverseAST(context, node.arg1, func, preorder);
-		if (err) return err;
-		return traverseAST(context, node.arg2, func, preorder);
+		traverseAST(context, node.arg1, func, preorder);
+		traverseAST(context, node.arg2, func, preorder);
 	};
 
-	const err = traverseAST(context, ast, (_context, node) => {
+	traverseAST(context, ast, (_context, node) => {
 		const token = node.token;
 		if (node.type === ASTNodeType.OP_GROUP) {
 			if (token.type !== TokenType.LPAREN) return;
 
 			if (node.nodes.length === 0) {
-				return makeError('nothing inside parentheses', token);
+				throw new TransformError('nothing inside parentheses', token);
 			} else if (node.nodes.length > 1) {
-				return makeError('too many expressions inside parentheses', token);
+				throw new TransformError('too many expressions inside parentheses', token);
 			}
 
 			const subNode = node.nodes[0];
@@ -39,7 +37,7 @@ function pass_operation(context, ast) {
 					op = OperatorType.NEGATIVE;
 					break;
 				default:
-					return makeError('unrecognized unary operator', token);
+					throw new TransformError('unrecognized unary operator', token);
 			}
 
 			node.type = NodeType.EXPR_UNARY;
@@ -66,7 +64,7 @@ function pass_operation(context, ast) {
 					op = OperatorType.DIVIDE;
 					break;
 				default:
-					return makeError('unrecognized binary operator', token);
+					throw new TransformError('unrecognized binary operator', token);
 			}
 
 			node.type = NodeType.EXPR_BINARY;
@@ -79,8 +77,6 @@ function pass_operation(context, ast) {
 			delete node.node2;
 		}
 	});
-
-	if (err) context.err = err;
 }
 
 export default pass_operation;

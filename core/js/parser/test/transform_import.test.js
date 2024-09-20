@@ -27,8 +27,7 @@ test('global', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_import ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_import ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });
@@ -62,8 +61,7 @@ test('local', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_function_definition, pass_import ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_function_definition, pass_import ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });

@@ -1,8 +1,8 @@
 
 import { TokenType } from '../tokenizer.js';
 import { ASTNodeType } from '../parser.js';
-import { NodeType, traverseAST, err_msg_no_parent, spliceNodes } from '../transformer.js';
-import { makeError } from '../util.js';
+import { NodeType, TransformError, traverseAST, spliceNodes } from '../transformer.js';
+import { err_msg_bad_stat_expr_pos, err_msg_no_parent } from '../error_messages.js';
 
 
 /*
@@ -12,11 +12,11 @@ import { makeError } from '../util.js';
 function pass_variable_definition(context, ast) {
 	context.childrenTraversalMethods[NodeType.VAR_DEF] = (context, node, func, preorder) => {
 		if (node.init) {
-			return traverseAST(context, node.init, func, preorder);
+			traverseAST(context, node.init, func, preorder);
 		}
 	};
 
-	const err = traverseAST(context, ast, (_context, node) => {
+	traverseAST(context, ast, (_context, node) => {
 		if (!(node.type === ASTNodeType.PRIMITIVE && node.token.type === TokenType.IDENTIFIER)) return;
 		const data = node.token.data;
 		let isConstant;
@@ -29,15 +29,15 @@ function pass_variable_definition(context, ast) {
 		}
 
 		const parent = node.parent;
-		if (!parent) return makeError(err_msg_no_parent, node.token);
+		if (!parent) throw new TransformError(err_msg_no_parent, node.token);
 
 		if (!(parent.type === ASTNodeType.ROOT || parent.type === ASTNodeType.OP_GROUP)) {
-			return makeError('bad variable definition position', node.token);
+			throw new TransformError(err_msg_bad_stat_expr_pos, node.token);
 		}
 
 		const def_node = parent.nodes[node.index + 1];
 		const delimited = parent.delimiters ? parent.delimiters[node.index].type !== TokenType.EMPTY : false;
-		if (!def_node || delimited) return makeError('missing variable definition', node.token);
+		if (!def_node || delimited) throw new TransformError('missing variable definition', node.token);
 
 		let var_name = undefined, init = undefined;
 
@@ -47,22 +47,22 @@ function pass_variable_definition(context, ast) {
 			if (def_token.type === TokenType.IDENTIFIER) {
 				var_name = def_token.data;
 			} else {
-				return makeError('expected identifier as variable name', def_token);
+				throw new TransformError('expected identifier as variable name', def_token);
 			}
 		} else if (def_node.type === ASTNodeType.OP_BINARY) {
 			// has initialization
 			if (def_node.token.type !== TokenType.ASSIGN) {
-				return makeError('expected assign symbol \'=\'', def_node.token);
+				throw new TransformError('expected assign symbol \'=\'', def_node.token);
 			}
 			const node1 = def_node.node1, node2 = def_node.node2;
 			if (node1.type !== ASTNodeType.PRIMITIVE || node1.token.type !== TokenType.IDENTIFIER) {
-				return makeError('expected identifier as variable name', node1.token);
+				throw new TransformError('expected identifier as variable name', node1.token);
 			}
 
 			var_name = node1.token.data;
 			init = node2;
 		} else {
-			return makeError('bad variable definition', def_node.token);
+			throw new TransformError('bad variable definition', def_node.token);
 		}
 
 		const var_def_node = {
@@ -80,14 +80,11 @@ function pass_variable_definition(context, ast) {
 		}
 
 		if (init) {
-			const err = pass_variable_definition(context, init);
-			if (err) return err;
+			pass_variable_definition(context, init);
 		}
 
-		return spliceNodes(parent.nodes, parent.delimiters, node.index, 2, var_def_node);
+		spliceNodes(parent.nodes, parent.delimiters, node.index, 2, var_def_node);
 	});
-
-	if (err) context.err = err;	
 }
 
 export default pass_variable_definition;

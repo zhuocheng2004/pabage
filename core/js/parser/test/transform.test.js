@@ -53,8 +53,7 @@ test('simple', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, standard_passes);
-		expect(err).toBeUndefined();
+		transform(ast, standard_passes);
 		expect(ast).toEqual(sample.ast);
 	}
 });
@@ -229,8 +228,7 @@ test('complicated', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, standard_passes);
-		expect(err).toBeUndefined();
+		transform(ast, standard_passes);
 		expect(ast).toEqual(sample.ast);
 	}
 });

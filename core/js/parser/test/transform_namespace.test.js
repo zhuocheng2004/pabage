@@ -64,8 +64,7 @@ test('simple', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_namespace ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_namespace ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });
@@ -136,8 +135,7 @@ test('nested', () => {
 
 	for (const sample of samples) {
 		const ast = parse(tokenize(sample.text), operators);
-		const err = transform(ast, [ pass_namespace ]);
-		expect(err).toBeUndefined();
+		transform(ast, [ pass_namespace ]);
 		expect(ast).toEqual(sample.ast);
 	}
 });

@@ -1,7 +1,7 @@
 
 import { ASTNodeType } from '../parser.js';
-import { NodeType, traverseAST, err_msg_no_parent, deleteNodes } from '../transformer.js';
-import { makeError } from '../util.js';
+import { NodeType, TransformError, traverseAST, deleteNodes } from '../transformer.js';
+import { err_msg_no_parent } from '../error_messages.js';
 
 
 /*
@@ -12,24 +12,22 @@ import { makeError } from '../util.js';
 function pass_final(context, ast) {
 	context.childrenTraversalMethods[NodeType.ROOT] = (context, node, func, preorder) => traverseNodes(context, node.nodes, func, preorder);
 
-	const err = traverseAST(context, ast, (_context, node) => {
+	traverseAST(context, ast, (_context, node) => {
 		switch (node.type) {
 			case ASTNodeType.ROOT:
 				node.type = NodeType.ROOT;
 				break;
 			case ASTNodeType.DELIMIT:
 				const parent = node.parent;
-				if (!parent) return makeError(err_msg_no_parent, node.token);
+				if (!parent) throw new TransformError(err_msg_no_parent, node.token);
 
 				if (!(parent.type === ASTNodeType.ROOT || parent.type === NodeType.ROOT)) {
-					return makeError('unexpected delimiter', node.token);
+					throw new TransformError('unexpected delimiter', node.token);
 				}
 
-				return deleteNodes(parent.nodes, parent.delimiters, node.index, 1);
+				deleteNodes(parent.nodes, parent.delimiters, node.index, 1);
 		}
 	});
-
-	if (err) context.err = err;
 }
 
 export default pass_final;
